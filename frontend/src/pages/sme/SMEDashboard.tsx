@@ -10,15 +10,18 @@ import {
   FiLogOut,
   FiBell,
   FiPlus,
-  FiClock,
   FiCheckCircle,
   FiUsers,
   FiArrowRight,
-  FiEdit,
-  FiEye,
   FiStar,
+  FiTrendingUp,
 } from "react-icons/fi";
 import "../../styles/dashboard.css";
+import SMEJobs from "./views/SMEJobs";
+import SMEMessages from "./views/SMEMessages";
+import SMEPayments from "./views/SMEPayments";
+import SMEProfile from "./views/SMEProfile";
+import SMEStudents from "./views/SMEStudents";
 
 const SMEDashboard = () => {
   const navigate = useNavigate();
@@ -43,53 +46,6 @@ const SMEDashboard = () => {
       label: "Total Spent",
       value: "₦120,000",
       color: "stat-orange",
-    },
-  ];
-
-  const myJobs = [
-    {
-      id: 1,
-      title: "Logo Design for my bakery",
-      description:
-        "Looking for a creative student to design a modern, clean logo for my bakery business.",
-      budget: "₦15,000",
-      category: "Graphic Design",
-      bids: 4,
-      status: "open",
-      date: "2 days ago",
-    },
-    {
-      id: 2,
-      title: "Social media management",
-      description:
-        "Need someone to manage my Instagram and Facebook pages, create content and grow my audience.",
-      budget: "₦30,000",
-      category: "Digital Marketing",
-      bids: 7,
-      status: "in_progress",
-      date: "5 days ago",
-    },
-    {
-      id: 3,
-      title: "Website for my restaurant",
-      description:
-        "Build a simple but professional website for my restaurant with menu and contact page.",
-      budget: "₦75,000",
-      category: "Web Development",
-      bids: 2,
-      status: "completed",
-      date: "2 weeks ago",
-    },
-    {
-      id: 4,
-      title: "Product photography",
-      description:
-        "Professional photos of my fashion products for my online store.",
-      budget: "₦20,000",
-      category: "Photography",
-      bids: 5,
-      status: "open",
-      date: "1 day ago",
     },
   ];
 
@@ -123,18 +79,125 @@ const SMEDashboard = () => {
     },
   ];
 
-  const getStatusBadge = (status: string) => {
-    if (status === "open")
-      return <span className="badge badge-green">Open</span>;
-    if (status === "in_progress")
-      return <span className="badge badge-blue">In Progress</span>;
-    if (status === "completed")
-      return <span className="badge badge-gray">Completed</span>;
+  const renderContent = () => {
+    switch (activePage) {
+      case "jobs":
+        return <SMEJobs />;
+      case "students":
+        return <SMEStudents />;
+      case "messages":
+        return <SMEMessages />;
+      case "payments":
+        return <SMEPayments />;
+      case "profile":
+        return <SMEProfile />;
+      default:
+        return (
+          <>
+            {/* STATS */}
+            <div className="stats-grid">
+              {stats.map((stat, i) => (
+                <div className={`stat-card ${stat.color}`} key={i}>
+                  <div className="stat-card-icon">{stat.icon}</div>
+                  <div>
+                    <p className="stat-card-value">{stat.value}</p>
+                    <p className="stat-card-label">{stat.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="section-header">
+              <h2 className="section-title">Recent Bids</h2>
+              <button
+                className="card-link"
+                onClick={() => setActivePage("jobs")}
+              >
+                View all jobs <FiArrowRight />
+              </button>
+            </div>
+
+            <div className="bidders-grid">
+              {recentBids.map((bid) => (
+                <div className="bidder-card" key={bid.id}>
+                  <div className="bidder-top">
+                    <div className="bidder-avatar">{bid.avatar}</div>
+                    <div>
+                      <p className="bidder-name">{bid.student}</p>
+                      <p className="bidder-job">{bid.job}</p>
+                    </div>
+                  </div>
+                  <div className="bidder-rating">
+                    <FiStar className="star" />
+                    <span>{bid.rating}</span>
+                    <span className="rating-count">
+                      ({bid.reviews} reviews)
+                    </span>
+                  </div>
+                  <div className="bidder-footer">
+                    <span className="bidder-amount">{bid.amount}</span>
+                    <div className="bidder-actions">
+                      <button
+                        className="btn-outline btn-small"
+                        onClick={() => setActivePage("messages")}
+                      >
+                        Message
+                      </button>
+                      <button className="btn-primary btn-small">Hire</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="section-header">
+              <h2 className="section-title">Quick Actions</h2>
+            </div>
+            <div className="quick-actions">
+              <div
+                className="quick-action"
+                onClick={() => navigate("/post-job")}
+              >
+                <div className="quick-action-icon qa-green">
+                  <FiPlus />
+                </div>
+                <p>Post a new job</p>
+              </div>
+              <div
+                className="quick-action"
+                onClick={() => setActivePage("students")}
+              >
+                <div className="quick-action-icon qa-blue">
+                  <FiUsers />
+                </div>
+                <p>Browse students</p>
+              </div>
+              <div
+                className="quick-action"
+                onClick={() => setActivePage("payments")}
+              >
+                <div className="quick-action-icon qa-purple">
+                  <FiTrendingUp />
+                </div>
+                <p>View payments</p>
+              </div>
+              <div
+                className="quick-action"
+                onClick={() => setActivePage("messages")}
+              >
+                <div className="quick-action-icon qa-orange">
+                  <FiMessageSquare />
+                </div>
+                <p>Messages</p>
+              </div>
+            </div>
+          </>
+        );
+    }
   };
 
   return (
     <div className="dashboard">
-      {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-logo" onClick={() => navigate("/")}>
           <FiZap className="logo-icon" />
@@ -180,14 +243,26 @@ const SMEDashboard = () => {
         </div>
       </aside>
 
-      {/* MAIN */}
       <main className="dashboard-main">
-        {/* TOPBAR */}
         <div className="topbar">
           <div>
-            <h1 className="topbar-title">Good morning, Bola 👋</h1>
+            <h1 className="topbar-title">
+              {activePage === "home" && "Good morning, Bola 👋"}
+              {activePage === "jobs" && "My Jobs"}
+              {activePage === "students" && "Browse Students"}
+              {activePage === "messages" && "Messages"}
+              {activePage === "payments" && "Payments"}
+              {activePage === "profile" && "My Profile"}
+            </h1>
             <p className="topbar-sub">
-              Here's what's happening with your jobs today
+              {activePage === "home" &&
+                "Here's what's happening with your jobs today"}
+              {activePage === "jobs" && "Manage all your posted jobs"}
+              {activePage === "students" &&
+                "Find the right student for your job"}
+              {activePage === "messages" && "Chat with students"}
+              {activePage === "payments" && "Track your payments and escrow"}
+              {activePage === "profile" && "Manage your business profile"}
             </p>
           </div>
           <div className="topbar-actions">
@@ -195,102 +270,18 @@ const SMEDashboard = () => {
               <FiBell />
               <span className="notif-dot"></span>
             </button>
-            <button
-              className="btn-primary post-job-btn"
-              onClick={() => navigate("/post-job")}
-            >
-              <FiPlus /> Post a Job
-            </button>
+            {activePage === "home" && (
+              <button
+                className="btn-primary post-job-btn"
+                onClick={() => navigate("/post-job")}
+              >
+                <FiPlus /> Post a Job
+              </button>
+            )}
           </div>
         </div>
 
-        {/* STATS */}
-        <div className="stats-grid">
-          {stats.map((stat, i) => (
-            <div className={`stat-card ${stat.color}`} key={i}>
-              <div className="stat-card-icon">{stat.icon}</div>
-              <div>
-                <p className="stat-card-value">{stat.value}</p>
-                <p className="stat-card-label">{stat.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* MY JOBS - CARD GRID */}
-        <div className="section-header">
-          <h2 className="section-title">My Jobs</h2>
-          <button className="card-link" onClick={() => navigate("/post-job")}>
-            <FiPlus /> Post new job
-          </button>
-        </div>
-
-        <div className="jobs-card-grid">
-          {myJobs.map((job) => (
-            <div className="job-card" key={job.id}>
-              <div className="job-card-top">
-                <div className="job-card-category">{job.category}</div>
-                {getStatusBadge(job.status)}
-              </div>
-              <h3 className="job-card-title">{job.title}</h3>
-              <p className="job-card-desc">{job.description}</p>
-              <div className="job-card-meta">
-                <span>
-                  <FiClock /> {job.date}
-                </span>
-                <span>
-                  <FiUsers /> {job.bids} bids
-                </span>
-              </div>
-              <div className="job-card-footer">
-                <span className="job-card-budget">{job.budget}</span>
-                <div className="job-card-actions">
-                  <button className="icon-btn">
-                    <FiEye />
-                  </button>
-                  <button className="icon-btn">
-                    <FiEdit />
-                  </button>
-                  <button className="btn-primary btn-small">View Bids</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* RECENT BIDS */}
-        <div className="section-header">
-          <h2 className="section-title">Recent Bids</h2>
-          <button className="card-link">
-            View all <FiArrowRight />
-          </button>
-        </div>
-
-        <div className="bidders-grid">
-          {recentBids.map((bid) => (
-            <div className="bidder-card" key={bid.id}>
-              <div className="bidder-top">
-                <div className="bidder-avatar">{bid.avatar}</div>
-                <div>
-                  <p className="bidder-name">{bid.student}</p>
-                  <p className="bidder-job">{bid.job}</p>
-                </div>
-              </div>
-              <div className="bidder-rating">
-                <FiStar className="star" />
-                <span>{bid.rating}</span>
-                <span className="rating-count">({bid.reviews} reviews)</span>
-              </div>
-              <div className="bidder-footer">
-                <span className="bidder-amount">{bid.amount}</span>
-                <div className="bidder-actions">
-                  <button className="btn-outline btn-small">Message</button>
-                  <button className="btn-primary btn-small">Hire</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {renderContent()}
       </main>
     </div>
   );
