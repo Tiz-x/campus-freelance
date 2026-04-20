@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiZap,
@@ -15,6 +15,9 @@ import {
   FiArrowRight,
   FiStar,
   FiTrendingUp,
+  FiMenu,
+  FiX,
+  FiCheck,
 } from "react-icons/fi";
 import "../../styles/dashboard.css";
 import SMEJobs from "./views/SMEJobs";
@@ -26,82 +29,64 @@ import SMEStudents from "./views/SMEStudents";
 const SMEDashboard = () => {
   const navigate = useNavigate();
   const [activePage, setActivePage] = useState("home");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const stats = [
-    {
-      icon: <FiBriefcase />,
-      label: "Active Jobs",
-      value: "3",
-      color: "stat-green",
-    },
+    { icon: <FiBriefcase />, label: "Active Jobs", value: "3", color: "stat-green" },
     { icon: <FiUsers />, label: "Total Bids", value: "12", color: "stat-blue" },
-    {
-      icon: <FiCheckCircle />,
-      label: "Completed",
-      value: "8",
-      color: "stat-purple",
-    },
-    {
-      icon: <FiDollarSign />,
-      label: "Total Spent",
-      value: "₦120,000",
-      color: "stat-orange",
-    },
+    { icon: <FiCheckCircle />, label: "Completed", value: "8", color: "stat-purple" },
+    { icon: <FiDollarSign />, label: "Total Spent", value: "₦120,000", color: "stat-orange" },
   ];
 
   const recentBids = [
-    {
-      id: 1,
-      student: "Adeola Okonkwo",
-      job: "Logo Design",
-      amount: "₦12,000",
-      avatar: "AO",
-      rating: 4.8,
-      reviews: 12,
-    },
-    {
-      id: 2,
-      student: "Chidi Nwosu",
-      job: "Logo Design",
-      amount: "₦14,000",
-      avatar: "CN",
-      rating: 4.5,
-      reviews: 8,
-    },
-    {
-      id: 3,
-      student: "Funmi Bello",
-      job: "Social Media",
-      amount: "₦28,000",
-      avatar: "FB",
-      rating: 5.0,
-      reviews: 20,
-    },
+    { id: 1, student: "Adeola Okonkwo", job: "Logo Design", amount: "₦12,000", avatar: "AO", rating: 4.8, reviews: 12, completedJobs: 24 },
+    { id: 2, student: "Chidi Nwosu", job: "Website Design", amount: "₦14,000", avatar: "CN", rating: 4.5, reviews: 8, completedJobs: 15 },
+    { id: 3, student: "Funmi Bello", job: "Social Media Manager", amount: "₦28,000", avatar: "FB", rating: 5.0, reviews: 20, completedJobs: 42 },
+  ];
+
+  const navItems = [
+    { icon: <FiHome />, label: "Dashboard", key: "home" },
+    { icon: <FiBriefcase />, label: "My Jobs", key: "jobs" },
+    { icon: <FiUsers />, label: "Browse Students", key: "students" },
+    { icon: <FiMessageSquare />, label: "Messages", key: "messages", badge: "3" },
+    { icon: <FiDollarSign />, label: "Payments", key: "payments" },
+    { icon: <FiUser />, label: "Profile", key: "profile" },
+  ];
+
+  const bottomNavItems = [
+    { icon: <FiHome />, label: "Home", key: "home" },
+    { icon: <FiBriefcase />, label: "Jobs", key: "jobs" },
+    { icon: <FiMessageSquare />, label: "Chat", key: "messages" },
+    { icon: <FiUser />, label: "Profile", key: "profile" },
+    { icon: <FiDollarSign />, label: "Pay", key: "payments" },
   ];
 
   const renderContent = () => {
     switch (activePage) {
-      case "jobs":
-        return <SMEJobs />;
-      case "students":
-        return <SMEStudents />;
-      case "messages":
-        return <SMEMessages />;
-      case "payments":
-        return <SMEPayments />;
-      case "profile":
-        return <SMEProfile />;
+      case "jobs": return <SMEJobs />;
+      case "students": return <SMEStudents />;
+      case "messages": return <SMEMessages />;
+      case "payments": return <SMEPayments />;
+      case "profile": return <SMEProfile />;
       default:
         return (
           <>
-            {/* STATS */}
             <div className="stats-grid">
               {stats.map((stat, i) => (
                 <div className={`stat-card ${stat.color}`} key={i}>
                   <div className="stat-card-icon">{stat.icon}</div>
-                  <div>
-                    <p className="stat-card-value">{stat.value}</p>
-                    <p className="stat-card-label">{stat.label}</p>
+                  <div className="stat-info">
+                    <p className="stat-value">{stat.value}</p>
+                    <p className="stat-label">{stat.label}</p>
                   </div>
                 </div>
               ))}
@@ -109,41 +94,43 @@ const SMEDashboard = () => {
 
             <div className="section-header">
               <h2 className="section-title">Recent Bids</h2>
-              <button
-                className="card-link"
-                onClick={() => setActivePage("jobs")}
-              >
-                View all jobs <FiArrowRight />
+              <button className="view-all-link" onClick={() => setActivePage("jobs")}>
+                View all <FiArrowRight size={14} />
               </button>
             </div>
 
             <div className="bidders-grid">
               {recentBids.map((bid) => (
                 <div className="bidder-card" key={bid.id}>
-                  <div className="bidder-top">
+                  <div className="bidder-header">
                     <div className="bidder-avatar">{bid.avatar}</div>
-                    <div>
+                    <div className="bidder-details">
                       <p className="bidder-name">{bid.student}</p>
-                      <p className="bidder-job">{bid.job}</p>
+                      <span className="bidder-job">{bid.job}</span>
                     </div>
                   </div>
-                  <div className="bidder-rating">
-                    <FiStar className="star" />
-                    <span>{bid.rating}</span>
-                    <span className="rating-count">
-                      ({bid.reviews} reviews)
-                    </span>
+                  <div className="bidder-stats">
+                    <div className="bidder-rating">
+                      <FiStar className="star" />
+                      <span className="rating-score">{bid.rating}</span>
+                      <span className="review-count">({bid.reviews})</span>
+                    </div>
+                    <div className="bidder-completed">
+                      <FiCheck size={12} />
+                      <span className="completed-count">{bid.completedJobs}</span>
+                      <span>jobs done</span>
+                    </div>
                   </div>
                   <div className="bidder-footer">
-                    <span className="bidder-amount">{bid.amount}</span>
+                    <div className="bid-price">
+                      <span className="price-amount">{bid.amount}</span>
+                      <span className="price-label">Budget</span>
+                    </div>
                     <div className="bidder-actions">
-                      <button
-                        className="btn-outline btn-small"
-                        onClick={() => setActivePage("messages")}
-                      >
-                        Message
+                      <button className="chat-btn" onClick={() => setActivePage("messages")}>
+                        <FiMessageSquare size={12} /> Chat
                       </button>
-                      <button className="btn-primary btn-small">Hire</button>
+                      <button className="hire-btn">Hire</button>
                     </div>
                   </div>
                 </div>
@@ -154,40 +141,20 @@ const SMEDashboard = () => {
               <h2 className="section-title">Quick Actions</h2>
             </div>
             <div className="quick-actions">
-              <div
-                className="quick-action"
-                onClick={() => navigate("/post-job")}
-              >
-                <div className="quick-action-icon qa-green">
-                  <FiPlus />
-                </div>
-                <p>Post a new job</p>
+              <div className="quick-action-card" onClick={() => navigate("/post-job")}>
+                <div className="quick-action-icon qa-green"><FiPlus /></div>
+                <p>Post Job</p>
               </div>
-              <div
-                className="quick-action"
-                onClick={() => setActivePage("students")}
-              >
-                <div className="quick-action-icon qa-blue">
-                  <FiUsers />
-                </div>
-                <p>Browse students</p>
+              <div className="quick-action-card" onClick={() => setActivePage("students")}>
+                <div className="quick-action-icon qa-blue"><FiUsers /></div>
+                <p>Browse Students</p>
               </div>
-              <div
-                className="quick-action"
-                onClick={() => setActivePage("payments")}
-              >
-                <div className="quick-action-icon qa-purple">
-                  <FiTrendingUp />
-                </div>
-                <p>View payments</p>
+              <div className="quick-action-card" onClick={() => setActivePage("payments")}>
+                <div className="quick-action-icon qa-purple"><FiTrendingUp /></div>
+                <p>Payments</p>
               </div>
-              <div
-                className="quick-action"
-                onClick={() => setActivePage("messages")}
-              >
-                <div className="quick-action-icon qa-orange">
-                  <FiMessageSquare />
-                </div>
+              <div className="quick-action-card" onClick={() => setActivePage("messages")}>
+                <div className="quick-action-icon qa-orange"><FiMessageSquare /></div>
                 <p>Messages</p>
               </div>
             </div>
@@ -196,93 +163,101 @@ const SMEDashboard = () => {
     }
   };
 
+  const SidebarContent = () => (
+    <>
+      <div className="sidebar-logo" onClick={() => navigate("/")}>
+        <FiZap className="logo-icon" />
+        <span>CampusFreelance</span>
+      </div>
+      <nav className="sidebar-nav">
+        {navItems.map((item) => (
+          <div
+            key={item.key}
+            className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
+            onClick={() => {
+              setActivePage(item.key);
+              setDrawerOpen(false);
+            }}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+            {item.badge && <span className="nav-badge">{item.badge}</span>}
+          </div>
+        ))}
+      </nav>
+      <div className="sidebar-bottom">
+        <div className="sidebar-profile">
+          <div className="sidebar-avatar">BA</div>
+          <div>
+            <p className="sidebar-name">Bola Adeyemi</p>
+            <p className="sidebar-role">SME Account</p>
+          </div>
+        </div>
+        <div className="nav-item logout-item" onClick={() => navigate("/")}>
+          <FiLogOut /> <span>Logout</span>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div className="dashboard">
-      <aside className="sidebar">
-        <div className="sidebar-logo" onClick={() => navigate("/")}>
-          <FiZap className="logo-icon" />
-          <span>CampusFreelance</span>
+      {/* Desktop Sidebar */}
+      <aside className="sidebar"><SidebarContent /></aside>
+
+      {/* Mobile Drawer */}
+      <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
+      <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "1rem" }}>
+          <button onClick={() => setDrawerOpen(false)} style={{ background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "8px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+            <FiX />
+          </button>
         </div>
+        <SidebarContent />
+      </div>
 
-        <nav className="sidebar-nav">
-          {[
-            { icon: <FiHome />, label: "Dashboard", key: "home" },
-            { icon: <FiBriefcase />, label: "My Jobs", key: "jobs" },
-            { icon: <FiUsers />, label: "Browse Students", key: "students" },
-            {
-              icon: <FiMessageSquare />,
-              label: "Messages",
-              key: "messages",
-              badge: "3",
-            },
-            { icon: <FiDollarSign />, label: "Payments", key: "payments" },
-            { icon: <FiUser />, label: "Profile", key: "profile" },
-          ].map((item) => (
-            <div
-              key={item.key}
-              className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-              onClick={() => setActivePage(item.key)}
-            >
-              {item.icon} <span>{item.label}</span>
-              {item.badge && <span className="nav-badge">{item.badge}</span>}
-            </div>
-          ))}
-        </nav>
-
-        <div className="sidebar-bottom">
-          <div className="sidebar-profile">
-            <div className="sidebar-avatar">BA</div>
-            <div>
-              <p className="sidebar-name">Bola Adeyemi</p>
-              <p className="sidebar-role">SME Account</p>
-            </div>
-          </div>
-          <div className="nav-item logout-item" onClick={() => navigate("/")}>
-            <FiLogOut /> <span>Logout</span>
-          </div>
-        </div>
-      </aside>
-
+      {/* Main Content */}
       <main className="dashboard-main">
         <div className="topbar">
-          <div>
-            <h1 className="topbar-title">
-              {activePage === "home" && "Good morning, Bola 👋"}
-              {activePage === "jobs" && "My Jobs"}
-              {activePage === "students" && "Browse Students"}
-              {activePage === "messages" && "Messages"}
-              {activePage === "payments" && "Payments"}
-              {activePage === "profile" && "My Profile"}
-            </h1>
-            <p className="topbar-sub">
-              {activePage === "home" &&
-                "Here's what's happening with your jobs today"}
-              {activePage === "jobs" && "Manage all your posted jobs"}
-              {activePage === "students" &&
-                "Find the right student for your job"}
-              {activePage === "messages" && "Chat with students"}
-              {activePage === "payments" && "Track your payments and escrow"}
-              {activePage === "profile" && "Manage your business profile"}
-            </p>
-          </div>
-          <div className="topbar-actions">
-            <button className="topbar-notif">
-              <FiBell />
-              <span className="notif-dot"></span>
-            </button>
-            {activePage === "home" && (
-              <button
-                className="btn-primary post-job-btn"
-                onClick={() => navigate("/post-job")}
-              >
-                <FiPlus /> Post a Job
+          <div className="topbar-left">
+            {isMobile && (
+              <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)}>
+                <FiMenu />
               </button>
             )}
+            <div className="greeting">
+              <h1>Good morning, Bola</h1>
+              <p>Here's what's happening with your jobs today</p>
+            </div>
+          </div>
+          <div className="topbar-actions">
+            <button className="notification-btn">
+              <FiBell />
+              <span className="notification-badge"></span>
+            </button>
+            <button className="post-job-btn" onClick={() => navigate("/post-job")}>
+              <FiPlus /> <span>Post a Job</span>
+            </button>
           </div>
         </div>
-
         {renderContent()}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <div className="bottom-nav">
+          {bottomNavItems.map((item) => (
+            <button
+              key={item.key}
+              className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`}
+              onClick={() => setActivePage(item.key)}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

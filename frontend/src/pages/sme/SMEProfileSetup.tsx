@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiZap, FiCamera, FiUser, FiArrowRight, FiBriefcase, FiMapPin, FiPhone } from 'react-icons/fi'
+import { FiCamera, FiUser, FiArrowRight, FiBriefcase, FiMapPin, FiPhone } from 'react-icons/fi'
 import '../../styles/auth.css'
 
 const SMEProfileSetup = () => {
@@ -40,13 +40,13 @@ const SMEProfileSetup = () => {
 
   return (
     <div className="role-page">
-      <div className="role-header">
+      {/* <div className="role-header">
         <div className="auth-logo" onClick={() => navigate('/')}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
         <p className="setup-step">Step 1 of 1 — Profile Setup</p>
-      </div>
+      </div> */}
 
       <div className="role-content">
         <div className="setup-box">

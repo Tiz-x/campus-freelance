@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+// import { FiTwitter, FiInstagram, FiLinkedin } from "react-icons/fi";
 import {
   FiBriefcase,
   FiSearch,
@@ -45,9 +46,9 @@ const LandingPage = () => {
       {/* HERO */}
       <section className="hero">
         <div className="hero-content">
-          <div className="hero-badge">
+          {/* <div className="hero-badge">
             <FiStar /> Built for AAUA students
-          </div>
+          </div> */}
           <h1>Hire talented AAUA students or earn by offering your skills</h1>
           <p>
             The trusted campus marketplace connecting local businesses with
@@ -69,11 +70,11 @@ const LandingPage = () => {
           </div>
           <div className="hero-stats">
             <div className="stat">
-              <span className="stat-number">500+</span>
+              <span className="stat-number">50+</span>
               <span className="stat-label">Students verified</span>
             </div>
             <div className="stat">
-              <span className="stat-number">200+</span>
+              <span className="stat-number">100+</span>
               <span className="stat-label">Jobs completed</span>
             </div>
             <div className="stat">
@@ -123,6 +124,7 @@ const LandingPage = () => {
         </p>
         <div className="steps">
           <div className="step">
+            <div className="step-number">1</div>
             <div className="step-icon">
               <FiBriefcase />
             </div>
@@ -136,6 +138,7 @@ const LandingPage = () => {
             </a>
           </div>
           <div className="step">
+            <div className="step-number">2</div>
             <div className="step-icon">
               <FiSearch />
             </div>
@@ -149,6 +152,7 @@ const LandingPage = () => {
             </a>
           </div>
           <div className="step">
+            <div className="step-number">3</div>
             <div className="step-icon">
               <FiShield />
             </div>
@@ -169,21 +173,28 @@ const LandingPage = () => {
         <div className="section-label">CATEGORIES</div>
         <h2>Browse by categories</h2>
         <p className="section-sub">Find the right skill for your project</p>
-        <div className="categories-grid">
-  {[
-    { icon: <FiCode />, name: 'Web & Software Dev', jobs: 12 },
-    { icon: <FiPenTool />, name: 'Graphic Design & Branding', jobs: 8 },
-    { icon: <FiTrendingUp />, name: 'Digital Marketing', jobs: 9 },
-    { icon: <FiFileText />, name: 'Writing & Copywriting', jobs: 5 },
-    { icon: <FiCpu />, name: 'AI & Automation', jobs: 3 },
-  ].map((cat, i) => (
-    <div className="category-card" key={i}>
-      <span className="cat-icon">{cat.icon}</span>
-      <p className="cat-name">{cat.name}</p>
-      <p className="cat-jobs">{cat.jobs} jobs available</p>
-    </div>
-  ))}
-</div>
+
+        <div className="categories-grid-wrapper">
+          <div className="categories-grid">
+            {[
+              { icon: <FiCode />, name: "Web & Software Dev", jobs: 12 },
+              {
+                icon: <FiPenTool />,
+                name: "Graphic Design & Branding",
+                jobs: 8,
+              },
+              { icon: <FiTrendingUp />, name: "Digital Marketing", jobs: 9 },
+              { icon: <FiFileText />, name: "Writing & Copywriting", jobs: 5 },
+              { icon: <FiCpu />, name: "AI & Automation", jobs: 3 },
+            ].map((cat, i) => (
+              <div className="category-card" key={i}>
+                <span className="cat-icon">{cat.icon}</span>
+                <p className="cat-name">{cat.name}</p>
+                <p className="cat-jobs">{cat.jobs} jobs available</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* TESTIMONIALS */}
@@ -258,22 +269,94 @@ const LandingPage = () => {
 
       {/* FOOTER */}
       <footer className="footer">
-        <div className="footer-logo">
-          <FiZap className="logo-icon" />
-          <span className="logo-text">CampusFreelance</span>
+        {/* <div className="footer-top">
+          <div className="footer-brand">
+            <div className="footer-logo">
+              <FiZap className="logo-icon" />
+              <span>CampusFreelance</span>
+            </div>
+            <p>
+              The trusted campus marketplace connecting local businesses with
+              verified AAUA students. Real work, real earnings, secure payments.
+            </p>
+            <div className="footer-social">
+              <a href="#" className="footer-social-btn">
+                <FiTwitter />
+              </a>
+              <a href="#" className="footer-social-btn">
+                <FiInstagram />
+              </a>
+              <a href="#" className="footer-social-btn">
+                <FiLinkedin />
+              </a>
+            </div>
+          </div>
+
+          <div className="footer-col">
+            <h4>Platform</h4>
+            <ul>
+              <li>
+                <a href="#">How it works</a>
+              </li>
+              <li>
+                <a href="#">Browse jobs</a>
+              </li>
+              <li>
+                <a href="#">Post a job</a>
+              </li>
+              <li>
+                <a href="#">Categories</a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <h4>Company</h4>
+            <ul>
+              <li>
+                <a href="#">About us</a>
+              </li>
+              <li>
+                <a href="#">Blog</a>
+              </li>
+              <li>
+                <a href="#">Careers</a>
+              </li>
+              <li>
+                <a href="#">Contact</a>
+              </li>
+            </ul>
+          </div>
+
+          <div className="footer-col">
+            <h4>Support</h4>
+            <ul>
+              <li>
+                <a href="#">Help center</a>
+              </li>
+              <li>
+                <a href="#">Privacy policy</a>
+              </li>
+              <li>
+                <a href="#">Terms of service</a>
+              </li>
+              <li>
+                <a href="#">Security</a>
+              </li>
+            </ul>
+          </div>
+        </div> */}
+
+        <div className="footer-bottom">
+          <p className="footer-copy">
+            © 2026 CampusFreelance. All rights reserved.
+          </p>
+          <div className="footer-bottom-links">
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">Cookies</a>
+          </div>
         </div>
-        <p className="footer-text">
-          The campus marketplace for AAUA students and local businesses.
-        </p>
-        <div className="footer-links">
-          <a href="#">About</a>
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-          <a href="#">Contact</a>
-        </div>
-        <p className="footer-copy">
-          © 2026 CampusFreelance. All rights reserved.
-        </p>
       </footer>
     </div>
   );

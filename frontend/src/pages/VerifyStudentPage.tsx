@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiZap, FiArrowRight, FiShield, FiCamera, FiUser } from 'react-icons/fi'
+import { FiArrowRight, FiShield, FiCamera, FiUser } from 'react-icons/fi'
 import '../styles/auth.css'
 
 const VerifyStudentPage = () => {
@@ -48,12 +48,12 @@ const VerifyStudentPage = () => {
 
   return (
     <div className="role-page">
-      <div className="role-header">
+      {/* <div className="role-header">
         <div className="auth-logo" onClick={() => navigate('/')}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
-      </div>
+      </div> */}
 
       <div className="role-content">
         <div className="verify-box">

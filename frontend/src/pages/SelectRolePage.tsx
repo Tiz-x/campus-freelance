@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiBriefcase, FiBook, FiArrowRight, FiZap } from "react-icons/fi";
+import { FiBriefcase, FiBook, FiArrowRight } from "react-icons/fi";
 import "../styles/auth.css";
 
 const SelectRolePage = () => {
@@ -18,12 +18,12 @@ const SelectRolePage = () => {
 
   return (
     <div className="role-page">
-      <div className="role-header">
+      {/* <div className="role-header">
         <div className="auth-logo" onClick={() => navigate("/")}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
-      </div>
+      </div> */}
 
       <div className="role-content">
         <h1>How do you want to use CampusFreelance?</h1>
