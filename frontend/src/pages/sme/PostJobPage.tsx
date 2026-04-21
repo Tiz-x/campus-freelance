@@ -1,369 +1,329 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLoading } from "../../context/LoadingContext";
 import {
-  FiZap, FiArrowRight, FiArrowLeft, FiBriefcase,
-  FiDollarSign, FiTag, FiClock
-} from 'react-icons/fi'
-import '../../styles/postjob.css'
-
-const categories = [
-  {
-    name: 'Web & Software Development',
-    subcategories: [
-      'Business Website Creation',
-      'E-commerce Store Setup',
-      'Landing Page Design',
-      'Website Maintenance & Bug Fixing',
-    ],
-  },
-  {
-    name: 'Graphic Design & Branding',
-    subcategories: [
-      'Logo Creation & Brand Identity',
-      'Flyer, Poster & Banner Design',
-      'Product Packaging Design',
-      'Business Card Design',
-    ],
-  },
-  {
-    name: 'Digital Marketing & Social Media',
-    subcategories: [
-      'Social Media Account Management',
-      'Social Media Content Creation',
-      'Paid Ad Campaign Setup',
-      'Google My Business & Local SEO',
-    ],
-  },
-  {
-    name: 'Writing & Copywriting',
-    subcategories: [
-      'Product Descriptions',
-      'Business Proposals & Letter Writing',
-      'Social Media Captions & Copy',
-      'Blog Article Writing',
-    ],
-  },
-  {
-    name: 'AI Integration & Automation',
-    subcategories: [
-      'WhatsApp & Instagram Chatbot Setup',
-      'AI-Generated Marketing Graphics',
-      'AI Sales Data Analysis',
-    ],
-  },
-]
-
-const budgetRanges = [
-  '₦5,000 - ₦15,000',
-  '₦15,000 - ₦30,000',
-  '₦30,000 - ₦50,000',
-  '₦50,000 - ₦100,000',
-  '₦100,000+',
-  'Custom amount',
-]
-
-const durations = [
-  'Less than 1 week',
-  '1 - 2 weeks',
-  '2 - 4 weeks',
-  '1 - 3 months',
-  'More than 3 months',
-]
+  FiZap,
+  FiArrowLeft,
+  FiBriefcase,
+  FiClock,
+  FiDollarSign,
+  FiTag,
+  FiMapPin,
+  FiChevronRight,
+  FiCheckCircle,
+} from "react-icons/fi";
+import "../../styles/postjob.css";
 
 const PostJobPage = () => {
-  const navigate = useNavigate()
-  const [step, setStep] = useState(1)
-  const [form, setForm] = useState({
-    title: '',
-    category: '',
-    subcategory: '',
-    description: '',
-    requirements: '',
-    budgetRange: '',
-    customBudget: '',
-    duration: '',
-  })
+  const navigate = useNavigate();
+  const { startLoading, stopLoading } = useLoading();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    subcategory: "",
+    description: "",
+    budget: "",
+    duration: "",
+    location: "",
+    skills: [] as string[],
+  });
 
-  const selectedCategory = categories.find(c => c.name === form.category)
+  const categories = ["Design", "Development", "Marketing", "Writing", "Video", "Music", "Business"];
+  const subcategories: Record<string, string[]> = {
+    Design: ["Logo Design", "UI/UX Design", "Graphics Design", "Web Design", "Product Design"],
+    Development: ["Web Development", "Mobile Development", "Software Dev", "API Integration"],
+    Marketing: ["Social Media", "SEO", "Email Marketing", "Content Marketing"],
+    Writing: ["Article Writing", "Copywriting", "Technical Writing", "Blog Posts"],
+    Video: ["Video Editing", "Animation", "Motion Graphics", "Filming"],
+    Music: ["Music Production", "Mixing", "Mastering", "Voice Over"],
+    Business: ["Data Entry", "Virtual Assistant", "Project Management", "Research"],
+  };
+  const budgets = ["₦5,000 - ₦15,000", "₦15,000 - ₦30,000", "₦30,000 - ₦50,000", "₦50,000 - ₦100,000", "₦100,000+"];
+  const durations = ["Less than 1 week", "1-2 weeks", "2-4 weeks", "1-3 months", "3+ months"];
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-  const handleNext = () => {
-    if (step < 3) setStep(step + 1)
-  }
+  const handleCategorySelect = (category: string) => {
+    setFormData({ ...formData, category, subcategory: "" });
+  };
 
-  const handleBack = () => {
-    if (step > 1) setStep(step - 1)
-  }
+  const handleSubcategorySelect = (subcategory: string) => {
+    setFormData({ ...formData, subcategory });
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    navigate('/dashboard/sme')
-  }
+  const handleBudgetSelect = (budget: string) => {
+    setFormData({ ...formData, budget });
+  };
+
+  const handleDurationSelect = (duration: string) => {
+    setFormData({ ...formData, duration });
+  };
+
+  const nextStep = () => {
+    setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    startLoading();
+
+    // Simulate API call - replace with actual Supabase insert
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    console.log("Job posted:", formData);
+    
+    setSubmitting(false);
+    stopLoading();
+    navigate("/dashboard/sme");
+  };
 
   return (
     <div className="postjob-page">
-
-      {/* HEADER */}
       <div className="postjob-header">
-        <div className="postjob-logo" onClick={() => navigate('/')}>
+        <div className="postjob-logo" onClick={() => navigate("/dashboard/sme")}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
-        <button className="back-to-dash" onClick={() => navigate('/dashboard/sme')}>
+        <button className="back-to-dash" onClick={() => navigate("/dashboard/sme")}>
           <FiArrowLeft /> Back to Dashboard
         </button>
       </div>
 
       <div className="postjob-container">
-
-        {/* PROGRESS */}
+        {/* Progress Steps */}
         <div className="postjob-progress">
-          {['Job Details', 'Description', 'Budget & Timeline'].map((label, i) => (
-            <div key={i} className={`progress-step ${step > i ? 'step-done' : ''} ${step === i + 1 ? 'step-active' : ''}`}>
-              <div className="progress-circle">{step > i + 1 ? '✓' : i + 1}</div>
-              <span>{label}</span>
-              {i < 2 && <div className={`progress-line ${step > i + 1 ? 'line-done' : ''}`} />}
-            </div>
-          ))}
+          <div className={`progress-step ${currentStep >= 1 ? "step-active" : ""} ${currentStep > 1 ? "step-done" : ""}`}>
+            <div className="progress-circle">{currentStep > 1 ? "✓" : "1"}</div>
+            <span>Job Details</span>
+          </div>
+          <div className={`progress-line ${currentStep > 1 ? "line-done" : ""}`}></div>
+          <div className={`progress-step ${currentStep >= 2 ? "step-active" : ""} ${currentStep > 2 ? "step-done" : ""}`}>
+            <div className="progress-circle">{currentStep > 2 ? "✓" : "2"}</div>
+            <span>Budget & Duration</span>
+          </div>
+          <div className={`progress-line ${currentStep > 2 ? "line-done" : ""}`}></div>
+          <div className={`progress-step ${currentStep >= 3 ? "step-active" : ""}`}>
+            <div className="progress-circle">3</div>
+            <span>Review & Post</span>
+          </div>
         </div>
 
         <div className="postjob-content">
-
-          {/* LEFT - FORM */}
           <div className="postjob-form-wrap">
-
-            {/* STEP 1 */}
-            {step === 1 && (
+            {currentStep === 1 && (
               <div className="postjob-step">
                 <h2>Tell us about your job</h2>
-                <p>Start with a clear title and category so students can find your job easily</p>
+                <p>Provide details so students can understand your requirements</p>
 
                 <div className="form-group">
-                  <label>Job title</label>
+                  <label>Job Title <span className="optional">(required)</span></label>
                   <div className="input-wrap">
-                    <FiBriefcase className="input-icon" />
                     <input
                       type="text"
                       name="title"
-                      placeholder="e.g. Logo Design for my bakery"
-                      value={form.title}
+                      placeholder="e.g., Logo Design for my bakery"
+                      value={formData.title}
                       onChange={handleChange}
+                      required
                     />
                   </div>
-                  <span className="input-hint">Be specific and clear — good titles attract the right students</span>
                 </div>
 
                 <div className="form-group">
-                  <label>Category</label>
-                  <div className="input-wrap">
-                    <FiTag className="input-icon" />
-                    <select
-                      name="category"
-                      value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value, subcategory: '' })}
-                      className="select-input"
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map(cat => (
-                        <option key={cat.name} value={cat.name}>{cat.name}</option>
-                      ))}
-                    </select>
+                  <label>Category <span className="optional">(required)</span></label>
+                  <div className="category-grid">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        className={`category-pill ${formData.category === cat ? "category-active" : ""}`}
+                        onClick={() => handleCategorySelect(cat)}
+                      >
+                        {cat}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {selectedCategory && (
+                {formData.category && (
                   <div className="form-group">
-                    <label>Subcategory</label>
+                    <label>Subcategory <span className="optional">(required)</span></label>
                     <div className="subcategory-grid">
-                      {selectedCategory.subcategories.map(sub => (
-                        <div
+                      {subcategories[formData.category]?.map((sub) => (
+                        <button
                           key={sub}
-                          className={`subcategory-pill ${form.subcategory === sub ? 'subcategory-active' : ''}`}
-                          onClick={() => setForm({ ...form, subcategory: sub })}
+                          type="button"
+                          className={`subcategory-pill ${formData.subcategory === sub ? "subcategory-active" : ""}`}
+                          onClick={() => handleSubcategorySelect(sub)}
                         >
                           {sub}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <button
-                  className="btn-primary postjob-next"
-                  onClick={handleNext}
-                  disabled={!form.title || !form.category || !form.subcategory}
-                >
-                  Continue <FiArrowRight />
+                <div className="form-group">
+                  <label>Job Description <span className="optional">(required)</span></label>
+                  <textarea
+                    name="description"
+                    rows={5}
+                    className="textarea-input"
+                    placeholder="Describe what you need done, requirements, and any other relevant details..."
+                    value={formData.description}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Location</label>
+                  <div className="input-wrap">
+                    <FiMapPin className="input-icon" />
+                    <input
+                      type="text"
+                      name="location"
+                      placeholder="e.g., Akungba-Akoko or Remote"
+                      value={formData.location}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <button className="postjob-next" onClick={nextStep} disabled={!formData.title || !formData.category || !formData.subcategory || !formData.description}>
+                  Continue <FiChevronRight />
                 </button>
               </div>
             )}
 
-            {/* STEP 2 */}
-            {step === 2 && (
+            {currentStep === 2 && (
               <div className="postjob-step">
-                <h2>Describe your job</h2>
-                <p>Give students everything they need to understand what you want</p>
+                <h2>Set your budget & timeline</h2>
+                <p>Help students understand your expectations</p>
 
                 <div className="form-group">
-                  <label>Job description</label>
-                  <textarea
-                    name="description"
-                    placeholder="Describe what you need done, your business, and the style you are looking for..."
-                    value={form.description}
-                    onChange={handleChange}
-                    className="textarea-input"
-                    rows={6}
-                  />
-                  <span className="input-hint">{form.description.length}/500 characters — minimum 100</span>
+                  <label>Budget Range</label>
+                  <div className="budget-grid">
+                    {budgets.map((budget) => (
+                      <button
+                        key={budget}
+                        type="button"
+                        className={`budget-pill ${formData.budget === budget ? "budget-active" : ""}`}
+                        onClick={() => handleBudgetSelect(budget)}
+                      >
+                        <FiDollarSign /> {budget}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Requirements <span className="optional">(optional)</span></label>
-                  <textarea
-                    name="requirements"
-                    placeholder="List specific skills or tools you want the student to have..."
-                    value={form.requirements}
-                    onChange={handleChange}
-                    className="textarea-input"
-                    rows={4}
-                  />
+                  <label>Expected Duration</label>
+                  <div className="duration-grid">
+                    {durations.map((duration) => (
+                      <button
+                        key={duration}
+                        type="button"
+                        className={`duration-pill ${formData.duration === duration ? "duration-active" : ""}`}
+                        onClick={() => handleDurationSelect(duration)}
+                      >
+                        <FiClock /> {duration}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="step-buttons">
-                  <button className="btn-outline postjob-back" onClick={handleBack}>
+                  <button className="postjob-back" onClick={prevStep}>
                     <FiArrowLeft /> Back
                   </button>
-                  <button
-                    className="btn-primary postjob-next"
-                    onClick={handleNext}
-                    disabled={form.description.length < 100}
-                  >
-                    Continue <FiArrowRight />
+                  <button className="postjob-next" onClick={nextStep} disabled={!formData.budget || !formData.duration}>
+                    Continue <FiChevronRight />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* STEP 3 */}
-            {step === 3 && (
+            {currentStep === 3 && (
               <div className="postjob-step">
-                <h2>Budget & timeline</h2>
-                <p>Set a fair budget and timeline to attract the right students</p>
+                <h2>Review your job posting</h2>
+                <p>Check everything looks good before posting</p>
 
-                <div className="form-group">
-                  <label>Budget range</label>
-                  <div className="budget-grid">
-                    {budgetRanges.map(range => (
-                      <div
-                        key={range}
-                        className={`budget-pill ${form.budgetRange === range ? 'budget-active' : ''}`}
-                        onClick={() => setForm({ ...form, budgetRange: range })}
-                      >
-                        <FiDollarSign />
-                        {range}
-                      </div>
-                    ))}
+                <div className="review-card">
+                  <div className="review-header">
+                    <FiBriefcase className="review-icon" />
+                    <h3>{formData.title || "Untitled Job"}</h3>
                   </div>
-                </div>
-
-                {form.budgetRange === 'Custom amount' && (
-                  <div className="form-group">
-                    <label>Enter your budget</label>
-                    <div className="input-wrap">
-                      <span className="input-icon" style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--primary)' }}>₦</span>
-                      <input
-                        type="number"
-                        name="customBudget"
-                        placeholder="e.g. 25000"
-                        value={form.customBudget}
-                        onChange={handleChange}
-                      />
+                  <div className="review-details">
+                    <div className="review-item">
+                      <FiTag />
+                      <span>{formData.category} / {formData.subcategory}</span>
+                    </div>
+                    <div className="review-item">
+                      <FiDollarSign />
+                      <span>{formData.budget || "Not set"}</span>
+                    </div>
+                    <div className="review-item">
+                      <FiClock />
+                      <span>{formData.duration || "Not set"}</span>
+                    </div>
+                    <div className="review-item">
+                      <FiMapPin />
+                      <span>{formData.location || "Remote"}</span>
                     </div>
                   </div>
-                )}
-
-                <div className="form-group">
-                  <label>Project duration</label>
-                  <div className="duration-grid">
-                    {durations.map(dur => (
-                      <div
-                        key={dur}
-                        className={`duration-pill ${form.duration === dur ? 'duration-active' : ''}`}
-                        onClick={() => setForm({ ...form, duration: dur })}
-                      >
-                        <FiClock />
-                        {dur}
-                      </div>
-                    ))}
+                  <div className="review-description">
+                    <p>{formData.description}</p>
                   </div>
                 </div>
 
                 <div className="step-buttons">
-                  <button className="btn-outline postjob-back" onClick={handleBack}>
+                  <button className="postjob-back" onClick={prevStep}>
                     <FiArrowLeft /> Back
                   </button>
-                  <button
-                    className="btn-primary postjob-next"
-                    onClick={handleSubmit}
-                    disabled={!form.budgetRange || !form.duration}
-                  >
-                    Post Job <FiArrowRight />
+                  <button className="postjob-next" onClick={handleSubmit} disabled={submitting}>
+                    {submitting ? "Posting..." : "Post Job"} <FiCheckCircle />
                   </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* RIGHT - PREVIEW */}
+          {/* Preview Panel */}
           <div className="postjob-preview">
-            <h3>Job Preview</h3>
+            <h3>PREVIEW</h3>
             <div className="preview-card">
-              <div className="preview-category">
-                {form.category || 'Category'}
-              </div>
-              <h4 className="preview-title">
-                {form.title || 'Your job title will appear here'}
-              </h4>
-              <p className="preview-desc">
-                {form.description || 'Your job description will appear here once you fill it in...'}
-              </p>
-              {form.subcategory && (
-                <span className="preview-sub">{form.subcategory}</span>
-              )}
+              <div className="preview-category">{formData.category || "Category"}</div>
+              <h4 className="preview-title">{formData.title || "Job Title"}</h4>
+              <p className="preview-desc">{formData.description || "Job description will appear here..."}</p>
+              <div className="preview-sub">{formData.subcategory || "Subcategory"}</div>
               <div className="preview-footer">
-                <span className="preview-budget">
-                  {form.budgetRange === 'Custom amount'
-                    ? `₦${form.customBudget || '0'}`
-                    : form.budgetRange || '₦0'}
-                </span>
-                {form.duration && (
-                  <span className="preview-duration">
-                    <FiClock /> {form.duration}
-                  </span>
-                )}
+                <span className="preview-budget">{formData.budget || "₦0"}</span>
+                <span className="preview-duration"><FiClock /> {formData.duration || "Not set"}</span>
               </div>
             </div>
-
             <div className="preview-tips">
-              <h4>💡 Tips for a great job post</h4>
+              <h4>Tips for a great job post:</h4>
               <ul>
-                <li>Use a clear and specific title</li>
-                <li>Describe exactly what you want</li>
-                <li>Set a fair and realistic budget</li>
-                <li>Be clear about your deadline</li>
+                <li>Be specific about your requirements</li>
+                <li>Set a realistic budget range</li>
+                <li>Provide examples if possible</li>
+                <li>Respond to bids promptly</li>
               </ul>
             </div>
           </div>
-
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default PostJobPage
+export default PostJobPage;

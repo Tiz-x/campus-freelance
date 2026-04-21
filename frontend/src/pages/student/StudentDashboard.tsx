@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useLoading } from "../../context/LoadingContext";
 import {
   FiZap,
   FiHome,
@@ -30,9 +32,57 @@ import StudentProfile from "./views/StudentProfile";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const { startLoading, stopLoading } = useLoading();
   const [activePage, setActivePage] = useState("home");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [dashboardData] = useState({
+    stats: [
+      { icon: <FiBriefcase />, label: "Active Jobs", value: "2", color: "stat-green" },
+      { icon: <FiCheckCircle />, label: "Completed", value: "5", color: "stat-purple" },
+      { icon: <FiDollarSign />, label: "Total Earned", value: "₦85,000", color: "stat-orange" },
+      { icon: <FiStar />, label: "My Rating", value: "4.8", color: "stat-blue" },
+    ],
+    featuredJobs: [
+      {
+        id: 1,
+        title: "Logo Design for my bakery",
+        budget: "₦15,000",
+        category: "Design",
+        bids: 4,
+        posted: "2 hours ago",
+        location: "Akungba-Akoko",
+        client: "Bola Adeyemi",
+        clientAvatar: "BA",
+        description: "Looking for a creative student to design a modern logo.",
+      },
+      {
+        id: 2,
+        title: "Social media management",
+        budget: "₦30,000",
+        category: "Marketing",
+        bids: 7,
+        posted: "5 hours ago",
+        location: "Owo, Ondo",
+        client: "Temi Fashion",
+        clientAvatar: "TF",
+        description: "Need a student to manage Instagram and Facebook pages.",
+      },
+      {
+        id: 3,
+        title: "WhatsApp chatbot setup",
+        budget: "₦45,000",
+        category: "AI & Tech",
+        bids: 1,
+        posted: "3 hours ago",
+        location: "Remote",
+        client: "Kunle Ventures",
+        clientAvatar: "KV",
+        description: "Set up an automated WhatsApp chatbot for customer service.",
+      },
+    ]
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -42,77 +92,21 @@ const StudentDashboard = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const stats = [
-    {
-      icon: <FiBriefcase />,
-      label: "Active Jobs",
-      value: "2",
-      color: "stat-green",
-    },
-    {
-      icon: <FiCheckCircle />,
-      label: "Completed",
-      value: "5",
-      color: "stat-purple",
-    },
-    {
-      icon: <FiDollarSign />,
-      label: "Total Earned",
-      value: "₦85,000",
-      color: "stat-orange",
-    },
-    { icon: <FiStar />, label: "My Rating", value: "4.8", color: "stat-blue" },
-  ];
-
-  const featuredJobs = [
-    {
-      id: 1,
-      title: "Logo Design for my bakery",
-      budget: "₦15,000",
-      category: "Design",
-      bids: 4,
-      posted: "2 hours ago",
-      location: "Akungba-Akoko",
-      client: "Bola Adeyemi",
-      clientAvatar: "BA",
-      description: "Looking for a creative student to design a modern logo.",
-    },
-    {
-      id: 2,
-      title: "Social media management",
-      budget: "₦30,000",
-      category: "Marketing",
-      bids: 7,
-      posted: "5 hours ago",
-      location: "Owo, Ondo",
-      client: "Temi Fashion",
-      clientAvatar: "TF",
-      description: "Need a student to manage Instagram and Facebook pages.",
-    },
-    {
-      id: 3,
-      title: "WhatsApp chatbot setup",
-      budget: "₦45,000",
-      category: "AI & Tech",
-      bids: 1,
-      posted: "3 hours ago",
-      location: "Remote",
-      client: "Kunle Ventures",
-      clientAvatar: "KV",
-      description: "Set up an automated WhatsApp chatbot for customer service.",
-    },
-  ];
+  // Handle navigation with progress bar
+  const handleNavClick = (key: string) => {
+    startLoading();
+    setActivePage(key);
+    setDrawerOpen(false);
+    setTimeout(() => {
+      stopLoading();
+    }, 300);
+  };
 
   const navItems = [
     { icon: <FiHome />, label: "Dashboard", key: "home" },
     { icon: <FiBriefcase />, label: "Browse Jobs", key: "jobs" },
     { icon: <FiTrendingUp />, label: "My Bids", key: "bids" },
-    {
-      icon: <FiMessageSquare />,
-      label: "Messages",
-      key: "messages",
-      badge: "2",
-    },
+    { icon: <FiMessageSquare />, label: "Messages", key: "messages", badge: "2" },
     { icon: <FiDollarSign />, label: "Earnings", key: "earnings" },
     { icon: <FiUser />, label: "Profile", key: "profile" },
   ];
@@ -127,21 +121,16 @@ const StudentDashboard = () => {
 
   const renderContent = () => {
     switch (activePage) {
-      case "jobs":
-        return <StudentJobs />;
-      case "bids":
-        return <StudentBids />;
-      case "messages":
-        return <StudentMessages />;
-      case "earnings":
-        return <StudentEarnings />;
-      case "profile":
-        return <StudentProfile />;
+      case "jobs": return <StudentJobs />;
+      case "bids": return <StudentBids />;
+      case "messages": return <StudentMessages />;
+      case "earnings": return <StudentEarnings />;
+      case "profile": return <StudentProfile />;
       default:
         return (
           <>
             <div className="stats-grid">
-              {stats.map((stat, i) => (
+              {dashboardData.stats.map((stat, i) => (
                 <div className={`stat-card ${stat.color}`} key={i}>
                   <div className="stat-card-icon">{stat.icon}</div>
                   <div className="stat-info">
@@ -154,35 +143,24 @@ const StudentDashboard = () => {
 
             <div className="section-header">
               <h2 className="section-title">Featured Jobs</h2>
-              <button
-                className="view-all-link"
-                onClick={() => setActivePage("jobs")}
-              >
+              <button className="view-all-link" onClick={() => handleNavClick("jobs")}>
                 Browse all jobs <FiArrowRight size={14} />
               </button>
             </div>
 
             <div className="jobs-card-grid">
-              {featuredJobs.map((job) => (
+              {dashboardData.featuredJobs.map((job) => (
                 <div className="job-card" key={job.id}>
                   <div className="job-card-top">
                     <span className="job-card-category">{job.category}</span>
-                    <button className="bookmark-btn">
-                      <FiBookmark />
-                    </button>
+                    <button className="bookmark-btn"><FiBookmark /></button>
                   </div>
                   <h3 className="job-card-title">{job.title}</h3>
                   <p className="job-card-desc">{job.description}</p>
                   <div className="job-card-meta">
-                    <span>
-                      <FiClock size={12} /> {job.posted}
-                    </span>
-                    <span>
-                      <FiMapPin size={12} /> {job.location}
-                    </span>
-                    <span>
-                      <FiUsers size={12} /> {job.bids} bids
-                    </span>
+                    <span><FiClock size={12} /> {job.posted}</span>
+                    <span><FiMapPin size={12} /> {job.location}</span>
+                    <span><FiUsers size={12} /> {job.bids} bids</span>
                   </div>
                   <div className="job-card-client">
                     <div className="client-avatar">{job.clientAvatar}</div>
@@ -190,12 +168,7 @@ const StudentDashboard = () => {
                   </div>
                   <div className="job-card-footer">
                     <span className="job-card-budget">{job.budget}</span>
-                    <button
-                      className="hire-btn"
-                      style={{ padding: "0.4rem 1rem" }}
-                    >
-                      Bid Now
-                    </button>
+                    <button className="hire-btn" style={{ padding: "0.4rem 1rem" }}>Bid Now</button>
                   </div>
                 </div>
               ))}
@@ -205,40 +178,20 @@ const StudentDashboard = () => {
               <h2 className="section-title">Quick Actions</h2>
             </div>
             <div className="quick-actions">
-              <div
-                className="quick-action-card"
-                onClick={() => setActivePage("jobs")}
-              >
-                <div className="quick-action-icon qa-green">
-                  <FiSearch />
-                </div>
+              <div className="quick-action-card" onClick={() => handleNavClick("jobs")}>
+                <div className="quick-action-icon qa-green"><FiSearch /></div>
                 <p>Browse jobs</p>
               </div>
-              <div
-                className="quick-action-card"
-                onClick={() => setActivePage("bids")}
-              >
-                <div className="quick-action-icon qa-blue">
-                  <FiTrendingUp />
-                </div>
+              <div className="quick-action-card" onClick={() => handleNavClick("bids")}>
+                <div className="quick-action-icon qa-blue"><FiTrendingUp /></div>
                 <p>My bids</p>
               </div>
-              <div
-                className="quick-action-card"
-                onClick={() => setActivePage("earnings")}
-              >
-                <div className="quick-action-icon qa-purple">
-                  <FiDollarSign />
-                </div>
+              <div className="quick-action-card" onClick={() => handleNavClick("earnings")}>
+                <div className="quick-action-icon qa-purple"><FiDollarSign /></div>
                 <p>My earnings</p>
               </div>
-              <div
-                className="quick-action-card"
-                onClick={() => setActivePage("messages")}
-              >
-                <div className="quick-action-icon qa-orange">
-                  <FiMessageSquare />
-                </div>
+              <div className="quick-action-card" onClick={() => handleNavClick("messages")}>
+                <div className="quick-action-icon qa-orange"><FiMessageSquare /></div>
                 <p>Messages</p>
               </div>
             </div>
@@ -258,10 +211,7 @@ const StudentDashboard = () => {
           <div
             key={item.key}
             className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-            onClick={() => {
-              setActivePage(item.key);
-              setDrawerOpen(false);
-            }}
+            onClick={() => handleNavClick(item.key)}
           >
             {item.icon}
             <span>{item.label}</span>
@@ -277,7 +227,12 @@ const StudentDashboard = () => {
             <p className="sidebar-role">Student · Verified ✓</p>
           </div>
         </div>
-        <div className="nav-item logout-item" onClick={() => navigate("/")}>
+        <div className="nav-item logout-item" onClick={async () => {
+          startLoading();
+          await signOut();
+          stopLoading();
+          navigate("/login");
+        }}>
           <FiLogOut /> <span>Logout</span>
         </div>
       </div>
@@ -286,49 +241,29 @@ const StudentDashboard = () => {
 
   return (
     <div className="dashboard">
-      {/* Desktop Sidebar */}
-      <aside className="sidebar">
-        <SidebarContent />
-      </aside>
+      <aside className="sidebar"><SidebarContent /></aside>
 
-      {/* Mobile Sidebar Drawer */}
-      <div
-        className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`}
-        onClick={() => setDrawerOpen(false)}
-      />
+      <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
       <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            padding: "1rem",
-          }}
-        >
-          <button
-            onClick={() => setDrawerOpen(false)}
-            className="drawer-close-btn"
-          >
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "1rem" }}>
+          <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn">
             <FiX />
           </button>
         </div>
         <SidebarContent />
       </div>
 
-      {/* Main Content */}
       <main className="dashboard-main">
         <div className="topbar">
           <div className="topbar-left">
             {isMobile && (
-              <button
-                className="mobile-menu-btn"
-                onClick={() => setDrawerOpen(true)}
-              >
+              <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)}>
                 <FiMenu />
               </button>
             )}
             <div className="greeting">
               <h1>
-                {activePage === "home" && "Welcome back, Adeola"}
+                {activePage === "home" && "Welcome back, Adeola 👋"}
                 {activePage === "jobs" && "Browse Jobs"}
                 {activePage === "bids" && "My Bids"}
                 {activePage === "messages" && "Messages"}
@@ -337,8 +272,7 @@ const StudentDashboard = () => {
               </h1>
               <p>
                 {activePage === "home" && "You have 3 new job matches today"}
-                {activePage === "jobs" &&
-                  "Find the perfect job for your skills"}
+                {activePage === "jobs" && "Find the perfect job for your skills"}
                 {activePage === "bids" && "Track all your proposals"}
                 {activePage === "messages" && "Chat with your clients"}
                 {activePage === "earnings" && "Track all your payments"}
@@ -354,24 +288,20 @@ const StudentDashboard = () => {
             <div className="student-topbar-avatar">AO</div>
           </div>
         </div>
-
         {renderContent()}
       </main>
 
-      {/* Mobile Bottom Navigation */}
       {isMobile && (
         <div className="bottom-nav">
           {bottomNavItems.map((item) => (
             <button
               key={item.key}
               className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`}
-              onClick={() => setActivePage(item.key)}
+              onClick={() => handleNavClick(item.key)}
             >
               {item.icon}
               <span>{item.label}</span>
-              {item.badge && (
-                <span className="bottom-nav-badge">{item.badge}</span>
-              )}
+              {item.badge && <span className="bottom-nav-badge">{item.badge}</span>}
             </button>
           ))}
         </div>

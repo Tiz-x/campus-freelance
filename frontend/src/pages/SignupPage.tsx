@@ -1,29 +1,59 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useLoading } from "../context/LoadingContext";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiZap } from "react-icons/fi";
 import "../styles/auth.css";
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { startLoading, stopLoading } = useLoading();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     full_name: "",
     email: "",
     password: "",
+    confirm_password: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    if (form.password !== form.confirm_password) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/select-role");
-    }, 1500);
+    startLoading(); // Start top progress bar
+
+    // Store pending data
+    const pendingData = {
+      email: form.email,
+      password: form.password,
+      fullName: form.full_name,
+    };
+    localStorage.setItem("pendingSignup", JSON.stringify(pendingData));
+
+    // Simulate network delay (remove this when using real API)
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    setLoading(false);
+    stopLoading(); // Stop top progress bar
+    navigate("/select-role");
   };
 
   return (
@@ -69,6 +99,8 @@ const SignupPage = () => {
           <h1>Create your account</h1>
           <p className="auth-sub">Join CampusFreelance today — it's free</p>
 
+          {error && <div className="auth-error">{error}</div>}
+
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
               <label>Full name</label>
@@ -107,7 +139,7 @@ const SignupPage = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  placeholder="Create a password"
+                  placeholder="Create a password (min. 6 characters)"
                   value={form.password}
                   onChange={handleChange}
                   required
@@ -122,8 +154,23 @@ const SignupPage = () => {
               </div>
             </div>
 
+            <div className="form-group">
+              <label>Confirm password</label>
+              <div className="input-wrap">
+                <FiLock className="input-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="confirm_password"
+                  placeholder="Confirm your password"
+                  value={form.confirm_password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
             <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? "Creating account..." : "Create account"}
+              {loading ? <LoadingSpinner size="small" /> : "Create account"}
             </button>
           </form>
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useLoading } from "../../context/LoadingContext";
 import {
   FiZap,
   FiHome,
@@ -28,9 +30,24 @@ import SMEStudents from "./views/SMEStudents";
 
 const SMEDashboard = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const { startLoading, stopLoading } = useLoading();
   const [activePage, setActivePage] = useState("home");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [dashboardData, setDashboardData] = useState({
+    stats: [
+      { icon: <FiBriefcase />, label: "Active Jobs", value: "3", color: "stat-green" },
+      { icon: <FiUsers />, label: "Total Bids", value: "12", color: "stat-blue" },
+      { icon: <FiCheckCircle />, label: "Completed", value: "8", color: "stat-purple" },
+      { icon: <FiDollarSign />, label: "Total Spent", value: "₦120,000", color: "stat-orange" },
+    ],
+    recentBids: [
+      { id: 1, student: "Adeola Okonkwo", job: "Logo Design", amount: "₦12,000", avatar: "AO", rating: 4.8, reviews: 12, completedJobs: 24 },
+      { id: 2, student: "Chidi Nwosu", job: "Website Design", amount: "₦14,000", avatar: "CN", rating: 4.5, reviews: 8, completedJobs: 15 },
+      { id: 3, student: "Funmi Bello", job: "Social Media Manager", amount: "₦28,000", avatar: "FB", rating: 5.0, reviews: 20, completedJobs: 42 },
+    ]
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -40,18 +57,15 @@ const SMEDashboard = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const stats = [
-    { icon: <FiBriefcase />, label: "Active Jobs", value: "3", color: "stat-green" },
-    { icon: <FiUsers />, label: "Total Bids", value: "12", color: "stat-blue" },
-    { icon: <FiCheckCircle />, label: "Completed", value: "8", color: "stat-purple" },
-    { icon: <FiDollarSign />, label: "Total Spent", value: "₦120,000", color: "stat-orange" },
-  ];
-
-  const recentBids = [
-    { id: 1, student: "Adeola Okonkwo", job: "Logo Design", amount: "₦12,000", avatar: "AO", rating: 4.8, reviews: 12, completedJobs: 24 },
-    { id: 2, student: "Chidi Nwosu", job: "Website Design", amount: "₦14,000", avatar: "CN", rating: 4.5, reviews: 8, completedJobs: 15 },
-    { id: 3, student: "Funmi Bello", job: "Social Media Manager", amount: "₦28,000", avatar: "FB", rating: 5.0, reviews: 20, completedJobs: 42 },
-  ];
+  // Handle navigation with progress bar
+  const handleNavClick = (key: string) => {
+    startLoading();
+    setActivePage(key);
+    setDrawerOpen(false);
+    setTimeout(() => {
+      stopLoading();
+    }, 300);
+  };
 
   const navItems = [
     { icon: <FiHome />, label: "Dashboard", key: "home" },
@@ -81,7 +95,7 @@ const SMEDashboard = () => {
         return (
           <>
             <div className="stats-grid">
-              {stats.map((stat, i) => (
+              {dashboardData.stats.map((stat, i) => (
                 <div className={`stat-card ${stat.color}`} key={i}>
                   <div className="stat-card-icon">{stat.icon}</div>
                   <div className="stat-info">
@@ -94,13 +108,13 @@ const SMEDashboard = () => {
 
             <div className="section-header">
               <h2 className="section-title">Recent Bids</h2>
-              <button className="view-all-link" onClick={() => setActivePage("jobs")}>
+              <button className="view-all-link" onClick={() => handleNavClick("jobs")}>
                 View all <FiArrowRight size={14} />
               </button>
             </div>
 
             <div className="bidders-grid">
-              {recentBids.map((bid) => (
+              {dashboardData.recentBids.map((bid) => (
                 <div className="bidder-card" key={bid.id}>
                   <div className="bidder-header">
                     <div className="bidder-avatar">{bid.avatar}</div>
@@ -127,7 +141,7 @@ const SMEDashboard = () => {
                       <span className="price-label">Budget</span>
                     </div>
                     <div className="bidder-actions">
-                      <button className="chat-btn" onClick={() => setActivePage("messages")}>
+                      <button className="chat-btn" onClick={() => handleNavClick("messages")}>
                         <FiMessageSquare size={12} /> Chat
                       </button>
                       <button className="hire-btn">Hire</button>
@@ -145,15 +159,15 @@ const SMEDashboard = () => {
                 <div className="quick-action-icon qa-green"><FiPlus /></div>
                 <p>Post Job</p>
               </div>
-              <div className="quick-action-card" onClick={() => setActivePage("students")}>
+              <div className="quick-action-card" onClick={() => handleNavClick("students")}>
                 <div className="quick-action-icon qa-blue"><FiUsers /></div>
                 <p>Browse Students</p>
               </div>
-              <div className="quick-action-card" onClick={() => setActivePage("payments")}>
+              <div className="quick-action-card" onClick={() => handleNavClick("payments")}>
                 <div className="quick-action-icon qa-purple"><FiTrendingUp /></div>
                 <p>Payments</p>
               </div>
-              <div className="quick-action-card" onClick={() => setActivePage("messages")}>
+              <div className="quick-action-card" onClick={() => handleNavClick("messages")}>
                 <div className="quick-action-icon qa-orange"><FiMessageSquare /></div>
                 <p>Messages</p>
               </div>
@@ -174,10 +188,7 @@ const SMEDashboard = () => {
           <div
             key={item.key}
             className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-            onClick={() => {
-              setActivePage(item.key);
-              setDrawerOpen(false);
-            }}
+            onClick={() => handleNavClick(item.key)}
           >
             {item.icon}
             <span>{item.label}</span>
@@ -193,7 +204,12 @@ const SMEDashboard = () => {
             <p className="sidebar-role">SME Account</p>
           </div>
         </div>
-        <div className="nav-item logout-item" onClick={() => navigate("/")}>
+        <div className="nav-item logout-item" onClick={async () => {
+          startLoading();
+          await signOut();
+          stopLoading();
+          navigate("/login");
+        }}>
           <FiLogOut /> <span>Logout</span>
         </div>
       </div>
@@ -202,10 +218,8 @@ const SMEDashboard = () => {
 
   return (
     <div className="dashboard">
-      {/* Desktop Sidebar */}
       <aside className="sidebar"><SidebarContent /></aside>
 
-      {/* Mobile Drawer */}
       <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
       <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
         <div style={{ display: "flex", justifyContent: "flex-end", padding: "1rem" }}>
@@ -216,7 +230,6 @@ const SMEDashboard = () => {
         <SidebarContent />
       </div>
 
-      {/* Main Content */}
       <main className="dashboard-main">
         <div className="topbar">
           <div className="topbar-left">
@@ -226,7 +239,7 @@ const SMEDashboard = () => {
               </button>
             )}
             <div className="greeting">
-              <h1>Good morning, Bola</h1>
+              <h1>Good morning, Bola 👋</h1>
               <p>Here's what's happening with your jobs today</p>
             </div>
           </div>
@@ -243,14 +256,13 @@ const SMEDashboard = () => {
         {renderContent()}
       </main>
 
-      {/* Mobile Bottom Navigation */}
       {isMobile && (
         <div className="bottom-nav">
           {bottomNavItems.map((item) => (
             <button
               key={item.key}
               className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`}
-              onClick={() => setActivePage(item.key)}
+              onClick={() => handleNavClick(item.key)}
             >
               {item.icon}
               <span>{item.label}</span>

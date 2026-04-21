@@ -1,33 +1,67 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiBriefcase, FiBook, FiArrowRight } from "react-icons/fi";
+import { FiBriefcase, FiBook, FiArrowRight, FiZap } from "react-icons/fi";
+import { useAuth } from "../context/AuthContext";
+import { useLoading } from "../context/LoadingContext";
 import "../styles/auth.css";
 
 const SelectRolePage = () => {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { startLoading, stopLoading } = useLoading();
   const [selected, setSelected] = useState<"sme" | "student" | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selected) return;
-    if (selected === "student") {
-      navigate("/verify-student");
+
+    const pendingData = localStorage.getItem("pendingSignup");
+    
+    if (!pendingData) {
+      navigate("/signup");
+      return;
+    }
+
+    const { email, password, fullName } = JSON.parse(pendingData);
+
+    setLoading(true);
+    startLoading();
+    setError("");
+
+    const { error: signUpError } = await signUp(email, password, fullName, selected);
+
+    if (signUpError) {
+      setError(signUpError.message);
+      setLoading(false);
+      stopLoading();
     } else {
-      navigate("/sme-profile-setup");
+      localStorage.removeItem("pendingSignup");
+      setLoading(false);
+      stopLoading();
+      
+      if (selected === "student") {
+        navigate("/verify-student");
+      } else {
+        navigate("/sme-profile-setup");
+      }
     }
   };
 
   return (
     <div className="role-page">
-      {/* <div className="role-header">
+      <div className="role-header">
         <div className="auth-logo" onClick={() => navigate("/")}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
-      </div> */}
+      </div>
 
       <div className="role-content">
         <h1>How do you want to use CampusFreelance?</h1>
         <p>Choose your role — you can always change this later</p>
+
+        {error && <div className="auth-error">{error}</div>}
 
         <div className="role-cards">
           <div
@@ -81,10 +115,10 @@ const SelectRolePage = () => {
 
         <button
           className="auth-btn role-btn"
-          disabled={!selected}
+          disabled={!selected || loading}
           onClick={handleContinue}
         >
-          Continue <FiArrowRight />
+          {loading ? "Creating account..." : "Continue"} <FiArrowRight />
         </button>
       </div>
     </div>

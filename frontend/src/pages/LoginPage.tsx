@@ -1,28 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useLoading } from "../context/LoadingContext";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiZap } from "react-icons/fi";
 import "../styles/auth.css";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { signIn, profile } = useAuth();
+  const { startLoading, stopLoading } = useLoading();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
 
+  // Stop loading and redirect when profile is loaded
+  useEffect(() => {
+    if (profile && loading) {
+      stopLoading();  // Stop top progress bar
+      setLoading(false); // Stop button loading
+      if (profile.role === "sme") {
+        navigate("/dashboard/sme");
+      } else {
+        navigate("/dashboard/student");
+      }
+    }
+  }, [profile, loading, stopLoading, navigate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    startLoading(); // Start top progress bar
+    setError("");
+
+    const { error: signInError } = await signIn(form.email, form.password);
+
+    if (signInError) {
+      setError(signInError.message);
       setLoading(false);
-      navigate("/select-role");
-    }, 1500);
+      stopLoading(); // Stop top progress bar on error
+    }
+    // On success, useEffect will handle stopLoading
   };
 
   return (
@@ -65,6 +92,8 @@ const LoginPage = () => {
         <div className="auth-box">
           <h1>Log in to your account</h1>
           <p className="auth-sub">Good to have you back!</p>
+
+          {error && <div className="auth-error">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
@@ -109,7 +138,7 @@ const LoginPage = () => {
             </div>
 
             <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? "Logging in..." : "Log in"}
+              {loading ? <LoadingSpinner size="small" /> : "Log in"}
             </button>
           </form>
 
