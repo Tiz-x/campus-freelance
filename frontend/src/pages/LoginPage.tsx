@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useLoading } from "../context/LoadingContext";
-import LoadingSpinner from "../components/LoadingSpinner";
 import { FiMail, FiLock, FiEye, FiEyeOff, FiZap } from "react-icons/fi";
 import "../styles/auth.css";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { signIn, profile } = useAuth();
-  const { startLoading, stopLoading } = useLoading();
+  const { signIn, profile, loading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -18,18 +15,17 @@ const LoginPage = () => {
     password: "",
   });
 
-  // Stop loading and redirect when profile is loaded
+  // Redirect if already logged in
   useEffect(() => {
-    if (profile && loading) {
-      stopLoading();  // Stop top progress bar
-      setLoading(false); // Stop button loading
+    if (!authLoading && profile) {
+      console.log("User logged in, role:", profile.role);
       if (profile.role === "sme") {
         navigate("/dashboard/sme");
       } else {
         navigate("/dashboard/student");
       }
     }
-  }, [profile, loading, stopLoading, navigate]);
+  }, [authLoading, profile, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -39,7 +35,6 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    startLoading(); // Start top progress bar
     setError("");
 
     const { error: signInError } = await signIn(form.email, form.password);
@@ -47,9 +42,8 @@ const LoginPage = () => {
     if (signInError) {
       setError(signInError.message);
       setLoading(false);
-      stopLoading(); // Stop top progress bar on error
     }
-    // On success, useEffect will handle stopLoading
+    // On success, the useEffect will redirect
   };
 
   return (
@@ -138,7 +132,7 @@ const LoginPage = () => {
             </div>
 
             <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? <LoadingSpinner size="small" /> : "Log in"}
+              {loading ? "Logging in..." : "Log in"}
             </button>
           </form>
 

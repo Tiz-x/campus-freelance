@@ -2235,3 +2235,177 @@
   background: #158f5e;
   transform: translateY(-1px);
 }
+
+
+
+
+
+
+
+/* Job Status Badges */
+.job-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.status-open {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-progress {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-completed {
+  background: #cce5ff;
+  color: #004085;
+}
+
+/* Bid Status */
+.bid-status {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.bid-status.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.bid-status.accepted {
+  background: #d4edda;
+  color: #155724;
+}
+
+.bid-status.rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+
+/* View Bids Button */
+.btn-primary.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #1a9c6e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary.btn-small:hover {
+  background: #158f5e;
+}
+
+/* Accept/Reject buttons in modal */
+.accept-btn {
+  background: #1a9c6e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.accept-btn:hover {
+  background: #158f5e;
+}
+
+.reject-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.reject-btn:hover {
+  background: #b91c1c;
+}
+
+
+
+
+
+
+
+
+/* Job status badges */
+.job-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.status-open {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-progress {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-completed {
+  background: #cce5ff;
+  color: #004085;
+}
+
+/* Bid status in cards */
+.bid-status-accepted {
+  background: #d4edda;
+  color: #155724;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.bid-status-pending {
+  background: #fff3cd;
+  color: #856404;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.bid-status-rejected {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Disabled button styling */
+.btn-outline.btn-small:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

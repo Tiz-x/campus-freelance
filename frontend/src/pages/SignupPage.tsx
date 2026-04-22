@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useLoading } from "../context/LoadingContext";
-import LoadingSpinner from "../components/LoadingSpinner";
 import { FiMail, FiLock, FiUser, FiEye, FiEyeOff, FiZap } from "react-icons/fi";
 import "../styles/auth.css";
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { startLoading, stopLoading } = useLoading();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,9 +35,7 @@ const SignupPage = () => {
     }
 
     setLoading(true);
-    startLoading(); // Start top progress bar
 
-    // Store pending data
     const pendingData = {
       email: form.email,
       password: form.password,
@@ -48,12 +43,8 @@ const SignupPage = () => {
     };
     localStorage.setItem("pendingSignup", JSON.stringify(pendingData));
 
-    // Simulate network delay (remove this when using real API)
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    setLoading(false);
-    stopLoading(); // Stop top progress bar
     navigate("/select-role");
+    setLoading(false);
   };
 
   return (
@@ -170,7 +161,7 @@ const SignupPage = () => {
             </div>
 
             <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? <LoadingSpinner size="small" /> : "Create account"}
+              {loading ? "Creating account..." : "Create account"}
             </button>
           </form>
 

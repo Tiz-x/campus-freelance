@@ -1,143 +1,96 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { FiArrowRight, FiShield, FiCamera, FiUser } from 'react-icons/fi'
-import '../styles/auth.css'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { FiZap, FiCheckCircle, FiAlertCircle, FiArrowRight } from "react-icons/fi";
+import "../styles/auth.css";
 
 const VerifyStudentPage = () => {
-  const navigate = useNavigate()
-  const [matric, setMatric] = useState('')
-  const [photo, setPhoto] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate();
+  const [matricNumber, setMatricNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => setPhoto(reader.result as string)
-      reader.readAsDataURL(file)
+  const validMatricNumbers = ["2021/1234", "2022/5678", "2023/9012", "2024/3456"];
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    if (validMatricNumbers.includes(matricNumber)) {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            matric_number: matricNumber,
+            is_verified: true 
+          })
+          .eq('id', user.id);
+        
+        setSuccess(true);
+        setTimeout(() => {
+          navigate("/dashboard/student");
+        }, 2000);
+      }
+    } else {
+      setError("Invalid matriculation number. Please check and try again.");
     }
-  }
-
-  const formatMatric = (value: string) => {
-    const numbers = value.replace(/\D/g, '')
-    return numbers.slice(0, 9)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-
-    if (matric.length !== 9) {
-      setError('Matric number must be 9 digits e.g. 240304004')
-      return
-    }
-
-    if (!photo) {
-      setError('Please upload a profile photo')
-      return
-    }
-
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      navigate('/dashboard/student')
-    }, 2000)
-  }
+    
+    setLoading(false);
+  };
 
   return (
     <div className="role-page">
-      {/* <div className="role-header">
-        <div className="auth-logo" onClick={() => navigate('/')}>
+      <div className="role-header">
+        <div className="auth-logo" onClick={() => navigate("/")}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
-      </div> */}
+      </div>
 
-      <div className="role-content">
-        <div className="verify-box">
-          <div className="verify-icon">
-            <FiShield />
-          </div>
-          <h1>Verify your student status</h1>
-          <p>Enter your AAUA matric number and upload a clear photo of yourself</p>
+      <div className="role-content" style={{ maxWidth: "500px", margin: "0 auto" }}>
+        {!success ? (
+          <>
+            <h1>Verify Your Student Status</h1>
+            <p>Enter your AAUA matriculation number to verify your student identity</p>
 
-          <form onSubmit={handleSubmit} className="auth-form">
+            {error && <div className="auth-error"><FiAlertCircle /> {error}</div>}
 
-            {/* PHOTO UPLOAD */}
-            <div className="photo-upload-wrap">
-              <div
-                className="photo-upload"
-                onClick={() => fileRef.current?.click()}
-              >
-                {photo ? (
-                  <img src={photo} alt="Profile" className="photo-preview" />
-                ) : (
-                  <div className="photo-placeholder">
-                    <FiUser className="photo-placeholder-icon" />
-                    <p>Upload photo</p>
-                  </div>
-                )}
-                <div className="photo-camera-btn">
-                  <FiCamera />
-                </div>
-              </div>
-              <p className="photo-hint">Clear passport photo or selfie</p>
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileRef}
-                onChange={handlePhoto}
-                style={{ display: 'none' }}
-              />
-            </div>
-
-            {/* MATRIC NUMBER */}
-            <div className="form-group">
-              <label>Matric number</label>
-              <div className="input-wrap">
-                <span className="input-icon matric-prefix">AAUA</span>
+            <form onSubmit={handleVerify}>
+              <div className="form-group">
                 <input
                   type="text"
-                  placeholder="240304004"
-                  value={matric}
-                  onChange={(e) => setMatric(formatMatric(e.target.value))}
-                  className="matric-input"
+                  placeholder="e.g., 2021/1234"
+                  value={matricNumber}
+                  onChange={(e) => setMatricNumber(e.target.value)}
                   required
                 />
-                <span className="matric-count">{matric.length}/9</span>
+                <small>Format: Year/Number (e.g., 2021/1234)</small>
               </div>
-              {error && <p className="input-error">{error}</p>}
+
+              <button type="submit" disabled={loading || !matricNumber} className="auth-btn">
+                {loading ? "Verifying..." : "Verify My Account"} <FiArrowRight />
+              </button>
+            </form>
+          </>
+        ) : (
+          <div style={{ textAlign: "center" }}>
+            <div className="success-icon">
+              <FiCheckCircle />
             </div>
-
-            <div className="verify-note">
-              <FiShield className="verify-note-icon" />
-              <p>Your matric number and photo are only used to verify your student status. Your photo will appear on your public profile.</p>
-            </div>
-
-            <button
-              type="submit"
-              className="auth-btn"
-              disabled={loading}
-            >
-              {loading ? 'Verifying...' : <><span>Verify & Continue</span> <FiArrowRight /></>}
-            </button>
-          </form>
-
-          <p className="auth-switch">
-            Not a student?{' '}
-            <span
-              onClick={() => navigate('/select-role')}
-              style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}
-            >
-              Go back
-            </span>
-          </p>
-        </div>
+            <h2>Verification Successful!</h2>
+            <p>Your student status has been verified.</p>
+            <p>Redirecting to dashboard...</p>
+          </div>
+        )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default VerifyStudentPage
+export default VerifyStudentPage;

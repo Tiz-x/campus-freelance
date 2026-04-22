@@ -1,50 +1,65 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 import { FiBriefcase, FiBook, FiArrowRight, FiZap } from "react-icons/fi";
-import { useAuth } from "../context/AuthContext";
-import { useLoading } from "../context/LoadingContext";
 import "../styles/auth.css";
 
 const SelectRolePage = () => {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
-  const { startLoading, stopLoading } = useLoading();
-  const [selected, setSelected] = useState<"sme" | "student" | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"sme" | "student" | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleContinue = async () => {
-    if (!selected) return;
+    if (!selectedRole) return;
 
     const pendingData = localStorage.getItem("pendingSignup");
-    
     if (!pendingData) {
       navigate("/signup");
       return;
     }
 
     const { email, password, fullName } = JSON.parse(pendingData);
-
+    
     setLoading(true);
-    startLoading();
     setError("");
 
-    const { error: signUpError } = await signUp(email, password, fullName, selected);
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: selectedRole,
+        },
+      },
+    });
 
     if (signUpError) {
       setError(signUpError.message);
       setLoading(false);
-      stopLoading();
-    } else {
-      localStorage.removeItem("pendingSignup");
-      setLoading(false);
-      stopLoading();
-      
-      if (selected === "student") {
-        navigate("/verify-student");
+    } else if (data.user) {
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        email: email,
+        full_name: fullName,
+        role: selectedRole,
+        is_verified: selectedRole === 'student' ? false : true,
+      });
+
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+        setError("Account created but profile setup failed. Please try logging in.");
       } else {
-        navigate("/sme-profile-setup");
+        localStorage.removeItem("pendingSignup");
+        
+        if (selectedRole === "student") {
+          navigate("/verify-student");
+        } else {
+          navigate("/sme-profile-setup");
+        }
       }
+      setLoading(false);
     }
   };
 
@@ -65,8 +80,8 @@ const SelectRolePage = () => {
 
         <div className="role-cards">
           <div
-            className={`role-card ${selected === "sme" ? "role-card-active" : ""}`}
-            onClick={() => setSelected("sme")}
+            className={`role-card ${selectedRole === "sme" ? "role-card-active" : ""}`}
+            onClick={() => setSelectedRole("sme")}
           >
             <div className="role-card-icon sme-icon">
               <FiBriefcase />
@@ -82,15 +97,15 @@ const SelectRolePage = () => {
               <li>✓ Pay securely with escrow</li>
             </ul>
             <div
-              className={`role-check ${selected === "sme" ? "role-check-active" : ""}`}
+              className={`role-check ${selectedRole === "sme" ? "role-check-active" : ""}`}
             >
-              {selected === "sme" ? "✓" : ""}
+              {selectedRole === "sme" ? "✓" : ""}
             </div>
           </div>
 
           <div
-            className={`role-card ${selected === "student" ? "role-card-active" : ""}`}
-            onClick={() => setSelected("student")}
+            className={`role-card ${selectedRole === "student" ? "role-card-active" : ""}`}
+            onClick={() => setSelectedRole("student")}
           >
             <div className="role-card-icon student-icon">
               <FiBook />
@@ -106,16 +121,16 @@ const SelectRolePage = () => {
               <li>✓ Get paid securely</li>
             </ul>
             <div
-              className={`role-check ${selected === "student" ? "role-check-active" : ""}`}
+              className={`role-check ${selectedRole === "student" ? "role-check-active" : ""}`}
             >
-              {selected === "student" ? "✓" : ""}
+              {selectedRole === "student" ? "✓" : ""}
             </div>
           </div>
         </div>
 
         <button
           className="auth-btn role-btn"
-          disabled={!selected || loading}
+          disabled={!selectedRole || loading}
           onClick={handleContinue}
         >
           {loading ? "Creating account..." : "Continue"} <FiArrowRight />

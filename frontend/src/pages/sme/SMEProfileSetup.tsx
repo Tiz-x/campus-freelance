@@ -1,177 +1,154 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { FiCamera, FiUser, FiArrowRight, FiBriefcase, FiMapPin, FiPhone } from 'react-icons/fi'
-import '../../styles/auth.css'
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
+import { FiZap, FiUser, FiBriefcase, FiMapPin, FiPhone, FiMail, FiArrowRight } from "react-icons/fi";
+import "../../styles/auth.css";
 
 const SMEProfileSetup = () => {
-  const navigate = useNavigate()
-  const [photo, setPhoto] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [form, setForm] = useState({
-    business_name: '',
-    business_type: '',
-    phone: '',
-    location: '',
-    bio: '',
-  })
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [formData, setFormData] = useState({
+    company_name: "",
+    phone: "",
+    address: "",
+    bio: "",
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || "");
+        setFormData(prev => ({ ...prev, company_name: user.user_metadata?.full_name || "" }));
+      }
+    };
+    getUser();
+  }, []);
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => setPhoto(reader.result as string)
-      reader.readAsDataURL(file)
-    }
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      navigate('/dashboard/sme')
-    }, 1500)
-  }
+    e.preventDefault();
+    setLoading(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase.auth.updateUser({
+        data: {
+          company_name: formData.company_name,
+          phone: formData.phone,
+          address: formData.address,
+          bio: formData.bio,
+          profile_complete: true,
+        }
+      });
+
+      await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: userEmail,
+          full_name: formData.company_name,
+          role: 'sme',
+          is_verified: true,
+          bio: formData.bio,
+        });
+        
+      navigate("/dashboard/sme");
+    }
+    
+    setLoading(false);
+  };
+
+  const handleSkip = () => {
+    navigate("/dashboard/sme");
+  };
 
   return (
     <div className="role-page">
-      {/* <div className="role-header">
-        <div className="auth-logo" onClick={() => navigate('/')}>
+      <div className="role-header">
+        <div className="auth-logo" onClick={() => navigate("/")}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
-        <p className="setup-step">Step 1 of 1 — Profile Setup</p>
-      </div> */}
+      </div>
 
-      <div className="role-content">
-        <div className="setup-box">
-          <h1>Set up your business profile</h1>
-          <p>Help students know who they are working for</p>
+      <div className="role-content" style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <h1>Complete Your Business Profile</h1>
+        <p>Tell students about your business to get better proposals</p>
 
-          {/* PHOTO */}
-          <div className="photo-upload-wrap">
-            <div className="photo-upload" onClick={() => fileRef.current?.click()}>
-              {photo ? (
-                <img src={photo} alt="Profile" className="photo-preview" />
-              ) : (
-                <div className="photo-placeholder">
-                  <FiUser className="photo-placeholder-icon" />
-                  <p>Upload photo</p>
-                </div>
-              )}
-              <div className="photo-camera-btn">
-                <FiCamera />
-              </div>
-            </div>
-            <p className="photo-hint">Your business or personal photo</p>
+        <form onSubmit={handleSubmit} style={{ textAlign: "left" }}>
+          <div className="form-group">
+            <label><FiBriefcase /> Company / Business Name</label>
             <input
-              type="file"
-              accept="image/*"
-              ref={fileRef}
-              onChange={handlePhoto}
-              style={{ display: 'none' }}
+              type="text"
+              name="company_name"
+              placeholder="Enter your business name"
+              value={formData.company_name}
+              onChange={handleChange}
+              required
             />
           </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label>Business name</label>
-                <div className="input-wrap">
-                  <FiBriefcase className="input-icon" />
-                  <input
-                    type="text"
-                    name="business_name"
-                    placeholder="e.g. Bola's Bakery"
-                    value={form.business_name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
+          <div className="form-group">
+            <label><FiMail /> Email Address</label>
+            <input
+              type="email"
+              value={userEmail}
+              disabled
+              style={{ background: "#f8f9fa" }}
+            />
+          </div>
 
-              <div className="form-group">
-                <label>Business type</label>
-                <div className="input-wrap">
-                  <FiBriefcase className="input-icon" />
-                  <select
-                    name="business_type"
-                    value={form.business_type}
-                    onChange={handleChange}
-                    required
-                    className="select-input"
-                  >
-                    <option value="">Select type</option>
-                    <option>Food & Bakery</option>
-                    <option>Fashion & Clothing</option>
-                    <option>Tech & Software</option>
-                    <option>Health & Beauty</option>
-                    <option>Education</option>
-                    <option>Entertainment</option>
-                    <option>Real Estate</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-              </div>
-            </div>
+          <div className="form-group">
+            <label><FiPhone /> Phone Number</label>
+            <input
+              type="tel"
+              name="phone"
+              placeholder="Enter your phone number"
+              value={formData.phone}
+              onChange={handleChange}
+            />
+          </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label>Phone number</label>
-                <div className="input-wrap">
-                  <FiPhone className="input-icon" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="e.g. 08012345678"
-                    value={form.phone}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
+          <div className="form-group">
+            <label><FiMapPin /> Business Address</label>
+            <input
+              type="text"
+              name="address"
+              placeholder="Enter your business address"
+              value={formData.address}
+              onChange={handleChange}
+            />
+          </div>
 
-              <div className="form-group">
-                <label>Location</label>
-                <div className="input-wrap">
-                  <FiMapPin className="input-icon" />
-                  <input
-                    type="text"
-                    name="location"
-                    placeholder="e.g. Akungba-Akoko, Ondo"
-                    value={form.location}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="form-group">
+            <label><FiUser /> About Your Business</label>
+            <textarea
+              name="bio"
+              rows={4}
+              placeholder="Tell students what your business does..."
+              value={formData.bio}
+              onChange={handleChange}
+            />
+          </div>
 
-            <div className="form-group">
-              <label>Short bio</label>
-              <textarea
-                name="bio"
-                placeholder="Tell students a little about your business..."
-                value={form.bio}
-                onChange={handleChange}
-                className="textarea-input"
-                rows={4}
-              />
-            </div>
-
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? 'Saving...' : <><span>Save & Go to Dashboard</span> <FiArrowRight /></>}
+          <div style={{ display: "flex", gap: "1rem" }}>
+            <button type="button" onClick={handleSkip} className="btn-secondary">
+              Skip for now
             </button>
-          </form>
-        </div>
+            <button type="submit" disabled={loading} className="auth-btn">
+              {loading ? "Saving..." : "Complete Profile"} <FiArrowRight />
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SMEProfileSetup
+export default SMEProfileSetup;
