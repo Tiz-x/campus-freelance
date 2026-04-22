@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import ChatPage from "../../components/Chat/ChatPage";
 import {
   FiZap,
   FiHome,
@@ -10,8 +11,8 @@ import {
   FiUser,
   FiLogOut,
   FiBell,
-  FiPlus,
   FiMapPin,
+  FiPlus,
   FiCheckCircle,
   FiUsers,
   FiArrowRight,
@@ -236,7 +237,7 @@ const SMEDashboard = () => {
     { icon: <FiHome />, label: "Dashboard", key: "home" },
     { icon: <FiBriefcase />, label: "My Jobs", key: "jobs" },
     { icon: <FiUsers />, label: "Browse Students", key: "students" },
-    { icon: <FiMessageSquare />, label: "Messages", key: "messages", badge: bids.filter(b => b.status === 'pending').length.toString() },
+    { icon: <FiMessageSquare />, label: "Messages", key: "messages", badge: "0" },
     { icon: <FiDollarSign />, label: "Payments", key: "payments" },
     { icon: <FiUser />, label: "Profile", key: "profile" },
   ];
@@ -310,7 +311,12 @@ const SMEDashboard = () => {
       case "students":
         return <div style={{ padding: "2rem", textAlign: "center" }}>Browse Students - Coming Soon!</div>;
       case "messages":
-        return <div style={{ padding: "2rem", textAlign: "center" }}>Messages - Coming Soon!</div>;
+        return (
+          <ChatPage 
+            userId={userId} 
+            userRole="sme"
+          />
+        );
       case "payments":
         return <div style={{ padding: "2rem", textAlign: "center" }}>Payments - Coming Soon!</div>;
       case "profile":

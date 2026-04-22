@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import ChatPage from "../../components/Chat/ChatPage";
 import {
   FiZap,
   FiHome,
@@ -19,6 +20,7 @@ import {
   FiClock,
   FiMapPin,
   FiUsers,
+  FiMenu,
   FiX,
   FiSend,
 } from "react-icons/fi";
@@ -29,6 +31,8 @@ const StudentDashboard = () => {
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
   const [activePage, setActivePage] = useState("home");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [jobs, setJobs] = useState<any[]>([]);
   const [myBids, setMyBids] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,84 +47,62 @@ const StudentDashboard = () => {
   const [successBidData, setSuccessBidData] = useState<any>(null);
 
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    
     checkUser();
+    
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const checkUser = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        // No session, redirect to login
-        navigate("/login");
-        return;
-      }
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
-        setUserId(user.id);
-        fetchJobs();
-        fetchMyBids(user.id);
-      } else {
-        navigate("/login");
-      }
-    } catch (error) {
-      console.error("Error checking user:", error);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
+      setUserId(user.id);
+      fetchJobs();
+      fetchMyBids(user.id);
+    } else {
       navigate("/login");
     }
   };
 
   const fetchJobs = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching jobs:", error);
-      } else {
-        setJobs(data || []);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
+    if (error) {
+      console.error("Error fetching jobs:", error);
+    } else {
+      setJobs(data || []);
     }
+    setLoading(false);
   };
 
   const fetchMyBids = async (studentId: string) => {
     if (!studentId) return;
     
-    try {
-      const { data, error } = await supabase
-        .from('bids')
-        .select('*, jobs(title, budget)')
-        .eq('student_id', studentId);
+    const { data, error } = await supabase
+      .from('bids')
+      .select('*, jobs(title, budget)')
+      .eq('student_id', studentId);
 
-      if (error) {
-        console.error("Error fetching bids:", error);
-      } else {
-        setMyBids(data || []);
-      }
-    } catch (error) {
-      console.error("Error:", error);
+    if (error) {
+      console.error("Error fetching bids:", error);
+    } else {
+      setMyBids(data || []);
     }
   };
 
   const handleBid = async () => {
     setBidError("");
     setErrorMessage("");
-    
-    // Check if user is logged in
-    if (!userId) {
-      setErrorMessage("You must be logged in to place a bid. Please refresh the page.");
-      return;
-    }
     
     if (!bidAmount) {
       setBidError("Please enter your bid amount");
@@ -155,48 +137,35 @@ const StudentDashboard = () => {
       status: 'pending',
     };
 
-    console.log("Submitting bid with userId:", userId);
-    console.log("Bid data:", bidData);
+    const { data, error } = await supabase
+      .from('bids')
+      .insert([bidData])
+      .select();
 
-    try {
-      const { data, error } = await supabase
-        .from('bids')
-        .insert([bidData])
-        .select();
-
-      if (error) {
-        console.error("Error placing bid:", error);
-        setErrorMessage(error.message);
-      } else {
-        console.log("Bid placed successfully:", data);
-        setSuccessBidData({
-          jobTitle: selectedJob.title,
-          amount: bidAmountNum,
-          proposal: bidProposal,
-        });
-        setShowBidModal(false);
-        setBidAmount("");
-        setBidProposal("");
-        setBidError("");
-        setShowSuccessModal(true);
-        
-        if (userId) {
-          fetchMyBids(userId);
-        }
+    if (error) {
+      console.error("Error placing bid:", error);
+      setErrorMessage(error.message);
+    } else {
+      setSuccessBidData({
+        jobTitle: selectedJob.title,
+        amount: bidAmountNum,
+        proposal: bidProposal,
+      });
+      setShowBidModal(false);
+      setBidAmount("");
+      setBidProposal("");
+      setBidError("");
+      setShowSuccessModal(true);
+      
+      if (userId) {
+        fetchMyBids(userId);
       }
-    } catch (error) {
-      console.error("Unexpected error:", error);
-      setErrorMessage("An unexpected error occurred. Please try again.");
-    } finally {
-      setSubmitting(false);
+      setTimeout(() => setShowSuccessModal(false), 3000);
     }
+    setSubmitting(false);
   };
 
   const openBidModal = (job: any) => {
-    if (!userId) {
-      setErrorMessage("Session expired. Please refresh the page.");
-      return;
-    }
     setSelectedJob(job);
     setShowBidModal(true);
     setBidAmount("");
@@ -221,95 +190,31 @@ const StudentDashboard = () => {
     { icon: <FiStar />, label: "My Rating", value: "0", color: "stat-blue" },
   ];
 
-  return (
-    <div className="dashboard">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-logo" onClick={() => navigate("/")}>
-          <FiZap className="logo-icon" />
-          <span>CampusFreelance</span>
-        </div>
+  const navItems = [
+    { icon: <FiHome />, label: "Dashboard", key: "home" },
+    { icon: <FiBriefcase />, label: "Browse Jobs", key: "jobs" },
+    { icon: <FiTrendingUp />, label: "My Bids", key: "bids" },
+    { icon: <FiMessageSquare />, label: "Messages", key: "messages", badge: "0" },
+    { icon: <FiDollarSign />, label: "Earnings", key: "earnings" },
+    { icon: <FiUser />, label: "Profile", key: "profile" },
+  ];
 
-        <nav className="sidebar-nav">
-          {[
-            { icon: <FiHome />, label: "Dashboard", key: "home" },
-            { icon: <FiBriefcase />, label: "Browse Jobs", key: "jobs" },
-            { icon: <FiTrendingUp />, label: "My Bids", key: "bids" },
-            { icon: <FiMessageSquare />, label: "Messages", key: "messages", badge: "2" },
-            { icon: <FiDollarSign />, label: "Earnings", key: "earnings" },
-            { icon: <FiUser />, label: "Profile", key: "profile" },
-          ].map((item) => (
-            <div
-              key={item.key}
-              className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-              onClick={() => setActivePage(item.key)}
-            >
-              {item.icon} <span>{item.label}</span>
-              {item.badge && <span className="nav-badge">{item.badge}</span>}
-            </div>
-          ))}
-        </nav>
+  const bottomNavItems = [
+    { icon: <FiHome />, label: "Home", key: "home" },
+    { icon: <FiBriefcase />, label: "Jobs", key: "jobs" },
+    { icon: <FiMessageSquare />, label: "Chat", key: "messages", badge: "0" },
+    { icon: <FiUser />, label: "Profile", key: "profile" },
+    { icon: <FiDollarSign />, label: "Earn", key: "earnings" },
+  ];
 
-        <div className="sidebar-bottom">
-          <div className="sidebar-profile">
-            <div className="sidebar-avatar">{userName.charAt(0).toUpperCase()}</div>
-            <div>
-              <p className="sidebar-name">{userName}</p>
-              <p className="sidebar-role">Student · Verified ✓</p>
-            </div>
-          </div>
-          <div className="nav-item logout-item" onClick={handleLogout}>
-            <FiLogOut /> <span>Logout</span>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="dashboard-main">
-        <div className="topbar">
-          <div>
-            <h1 className="topbar-title">Welcome back, {userName} 👋</h1>
-            <p className="topbar-sub">You have {jobs.length} new job matches today</p>
-          </div>
-          <div className="topbar-actions">
-            <button className="topbar-notif">
-              <FiBell />
-              <span className="notif-dot"></span>
-            </button>
-            <div className="student-topbar-avatar">{userName.charAt(0).toUpperCase()}</div>
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {errorMessage && (
-          <div style={{ background: "#f8d7da", color: "#721c24", padding: "1rem", borderRadius: "8px", marginBottom: "1rem", textAlign: "center" }}>
-            {errorMessage}
-          </div>
-        )}
-
-        {/* Stats Grid */}
-        <div className="stats-grid">
-          {stats.map((stat, i) => (
-            <div className={`stat-card ${stat.color}`} key={i}>
-              <div className="stat-card-icon">{stat.icon}</div>
-              <div>
-                <p className="stat-card-value">{stat.value}</p>
-                <p className="stat-card-label">{stat.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Available Jobs Section */}
-        {activePage === "home" && (
+  const renderContent = () => {
+    switch (activePage) {
+      case "jobs":
+        return (
           <>
             <div className="section-header">
-              <h2 className="section-title">Available Jobs</h2>
-              <button className="card-link" onClick={() => setActivePage("jobs")}>
-                Browse all jobs <FiArrowRight />
-              </button>
+              <h2 className="section-title">All Available Jobs</h2>
             </div>
-
             {loading ? (
               <div style={{ textAlign: "center", padding: "2rem" }}>Loading jobs...</div>
             ) : jobs.length === 0 ? (
@@ -318,7 +223,7 @@ const StudentDashboard = () => {
               </div>
             ) : (
               <div className="jobs-card-grid">
-                {jobs.slice(0, 3).map((job) => (
+                {jobs.map((job) => (
                   <div className="job-card" key={job.id}>
                     <div className="job-card-top">
                       <span className="job-card-category">{job.category}</span>
@@ -339,34 +244,10 @@ const StudentDashboard = () => {
                 ))}
               </div>
             )}
-
-            {/* Quick Actions */}
-            <div className="section-header">
-              <h2 className="section-title">Quick Actions</h2>
-            </div>
-            <div className="quick-actions">
-              <div className="quick-action" onClick={() => setActivePage("jobs")}>
-                <div className="quick-action-icon qa-green"><FiSearch /></div>
-                <p>Browse jobs</p>
-              </div>
-              <div className="quick-action" onClick={() => setActivePage("bids")}>
-                <div className="quick-action-icon qa-blue"><FiTrendingUp /></div>
-                <p>My bids</p>
-              </div>
-              <div className="quick-action" onClick={() => setActivePage("earnings")}>
-                <div className="quick-action-icon qa-purple"><FiDollarSign /></div>
-                <p>My earnings</p>
-              </div>
-              <div className="quick-action" onClick={() => setActivePage("messages")}>
-                <div className="quick-action-icon qa-orange"><FiMessageSquare /></div>
-                <p>Messages</p>
-              </div>
-            </div>
           </>
-        )}
-
-        {/* My Bids Section */}
-        {activePage === "bids" && (
+        );
+      case "bids":
+        return (
           <>
             <div className="section-header">
               <h2 className="section-title">My Bids</h2>
@@ -408,14 +289,40 @@ const StudentDashboard = () => {
               </div>
             )}
           </>
-        )}
-
-        {/* Browse Jobs Section */}
-        {activePage === "jobs" && (
+        );
+      case "messages":
+        return (
+          <ChatPage 
+            userId={userId} 
+            userRole="student"
+          />
+        );
+      case "earnings":
+        return <div style={{ padding: "2rem", textAlign: "center" }}>Earnings - Coming Soon!</div>;
+      case "profile":
+        return <div style={{ padding: "2rem", textAlign: "center" }}>Profile - Coming Soon!</div>;
+      default:
+        return (
           <>
-            <div className="section-header">
-              <h2 className="section-title">All Available Jobs</h2>
+            <div className="stats-grid">
+              {stats.map((stat, i) => (
+                <div className={`stat-card ${stat.color}`} key={i}>
+                  <div className="stat-card-icon">{stat.icon}</div>
+                  <div className="stat-info">
+                    <p className="stat-value">{stat.value}</p>
+                    <p className="stat-label">{stat.label}</p>
+                  </div>
+                </div>
+              ))}
             </div>
+
+            <div className="section-header">
+              <h2 className="section-title">Available Jobs</h2>
+              <button className="card-link" onClick={() => setActivePage("jobs")}>
+                Browse all jobs <FiArrowRight />
+              </button>
+            </div>
+
             {loading ? (
               <div style={{ textAlign: "center", padding: "2rem" }}>Loading jobs...</div>
             ) : jobs.length === 0 ? (
@@ -424,7 +331,7 @@ const StudentDashboard = () => {
               </div>
             ) : (
               <div className="jobs-card-grid">
-                {jobs.map((job) => (
+                {jobs.slice(0, 3).map((job) => (
                   <div className="job-card" key={job.id}>
                     <div className="job-card-top">
                       <span className="job-card-category">{job.category}</span>
@@ -445,17 +352,135 @@ const StudentDashboard = () => {
                 ))}
               </div>
             )}
-          </>
-        )}
 
-        {/* Placeholder for other sections */}
-        {(activePage === "messages" || activePage === "earnings" || activePage === "profile") && (
-          <div style={{ textAlign: "center", padding: "4rem", background: "white", borderRadius: "16px" }}>
-            <h2>Coming Soon!</h2>
-            <p>This feature is currently under development.</p>
+            <div className="section-header">
+              <h2 className="section-title">Quick Actions</h2>
+            </div>
+            <div className="quick-actions">
+              <div className="quick-action-card" onClick={() => setActivePage("jobs")}>
+                <div className="quick-action-icon qa-green"><FiSearch /></div>
+                <p>Browse jobs</p>
+              </div>
+              <div className="quick-action-card" onClick={() => setActivePage("bids")}>
+                <div className="quick-action-icon qa-blue"><FiTrendingUp /></div>
+                <p>My bids</p>
+              </div>
+              <div className="quick-action-card" onClick={() => setActivePage("earnings")}>
+                <div className="quick-action-icon qa-purple"><FiDollarSign /></div>
+                <p>My earnings</p>
+              </div>
+              <div className="quick-action-card" onClick={() => setActivePage("messages")}>
+                <div className="quick-action-icon qa-orange"><FiMessageSquare /></div>
+                <p>Messages</p>
+              </div>
+            </div>
+          </>
+        );
+    }
+  };
+
+  const SidebarContent = () => (
+    <>
+      <div className="sidebar-logo" onClick={() => navigate("/")}>
+        <FiZap className="logo-icon" />
+        <span>CampusFreelance</span>
+      </div>
+      <nav className="sidebar-nav">
+        {navItems.map((item) => (
+          <div
+            key={item.key}
+            className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
+            onClick={() => setActivePage(item.key)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+            {item.badge && <span className="nav-badge">{item.badge}</span>}
           </div>
-        )}
+        ))}
+      </nav>
+      <div className="sidebar-bottom">
+        <div className="sidebar-profile">
+          <div className="sidebar-avatar">{userName.charAt(0).toUpperCase()}</div>
+          <div>
+            <p className="sidebar-name">{userName}</p>
+            <p className="sidebar-role">Student · Verified ✓</p>
+          </div>
+        </div>
+        <div className="nav-item logout-item" onClick={handleLogout}>
+          <FiLogOut /> <span>Logout</span>
+        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="dashboard">
+      <aside className="sidebar"><SidebarContent /></aside>
+
+      <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
+      <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: "1rem" }}>
+          <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn">
+            <FiX />
+          </button>
+        </div>
+        <SidebarContent />
+      </div>
+
+      <main className="dashboard-main">
+        <div className="topbar">
+          <div className="topbar-left">
+            {isMobile && (
+              <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)}>
+                <FiMenu />
+              </button>
+            )}
+            <div className="greeting">
+              <h1>
+                {activePage === "home" && `Welcome back, ${userName} 👋`}
+                {activePage === "jobs" && "Browse Jobs"}
+                {activePage === "bids" && "My Bids"}
+                {activePage === "messages" && "Messages"}
+                {activePage === "earnings" && "My Earnings"}
+                {activePage === "profile" && "My Profile"}
+              </h1>
+              <p>
+                {activePage === "home" && `You have ${jobs.length} new job matches today`}
+                {activePage === "jobs" && "Find the perfect job for your skills"}
+                {activePage === "bids" && "Track all your proposals"}
+                {activePage === "messages" && "Chat with your clients"}
+                {activePage === "earnings" && "Track all your payments"}
+                {activePage === "profile" && "Manage your student profile"}
+              </p>
+            </div>
+          </div>
+          <div className="topbar-actions">
+            <button className="topbar-notif">
+              <FiBell />
+              <span className="notif-dot"></span>
+            </button>
+            <div className="student-topbar-avatar">{userName.charAt(0).toUpperCase()}</div>
+          </div>
+        </div>
+
+        {renderContent()}
       </main>
+
+      {isMobile && (
+        <div className="bottom-nav">
+          {bottomNavItems.map((item) => (
+            <button
+              key={item.key}
+              className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`}
+              onClick={() => setActivePage(item.key)}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge && <span className="bottom-nav-badge">{item.badge}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Bid Modal */}
       {showBidModal && selectedJob && (

@@ -3,7 +3,6 @@ import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import type{ User } from '@supabase/supabase-js'
 
-
 type ProfileType = {
   id: string
   email: string
@@ -27,58 +26,80 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user)
+    let isMounted = true
+
+    const checkAuth = async () => {
+      try {
+        console.log('Checking auth...')
         
-        // Get profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle()
+        // Get session
+        const { data: { session } } = await supabase.auth.getSession()
         
-        if (profileData) {
-          setProfile(profileData as ProfileType)
+        if (!isMounted) return
+        
+        if (session?.user) {
+          console.log('Session found for:', session.user.email)
+          setUser(session.user)
+          
+          // Try to get profile (but don't wait forever)
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle()
+            
+            if (profileData) {
+              setProfile(profileData as ProfileType)
+            }
+          } catch (profileErr) {
+            console.log('Profile fetch error:', profileErr)
+          }
+        } else {
+          console.log('No session found')
+        }
+      } catch (err) {
+        console.error('Auth error:', err)
+      } finally {
+        if (isMounted) {
+          console.log('Setting loading to false')
+          setLoading(false)
         }
       }
-      setLoading(false)
-    })
+    }
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle()
-        
-        if (profileData) {
-          setProfile(profileData as ProfileType)
-        }
-      } else {
-        setUser(null)
-        setProfile(null)
-      }
-      setLoading(false)
-    })
+    checkAuth()
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
+    
+    if (data?.user) {
+      setUser(data.user)
+      // Try to get profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .maybeSingle()
+      
+      if (profileData) {
+        setProfile(profileData as ProfileType)
+      }
+    }
+    
     return { error }
   }
 
   const signOut = async () => {
+    localStorage.removeItem('pendingSignup')
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
