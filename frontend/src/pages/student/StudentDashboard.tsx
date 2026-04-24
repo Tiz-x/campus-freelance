@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import ChatPage from "../../components/Chat/ChatPage";
+import NotificationsPopup from "../../components/NotificationsPopup";
 import {
   FiZap,
   FiHome,
@@ -23,6 +24,7 @@ import {
   FiMenu,
   FiX,
   FiSend,
+  FiMessageCircle,
 } from "react-icons/fi";
 import "../../styles/dashboard.css";
 
@@ -42,26 +44,123 @@ const StudentDashboard = () => {
   const [bidAmount, setBidAmount] = useState("");
   const [bidProposal, setBidProposal] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [bidError, setBidError] = useState("");
   const [successBidData, setSuccessBidData] = useState<any>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [userEmail, setUserEmail] = useState("");
+  const [profileData, setProfileData] = useState<any>(null);
+
+
+  useEffect(() => {
+  if (userId) {
+    fetchProfile();
+  }
+}, [userId]);
+
+const fetchProfile = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  
+  if (!error && data) {
+    setProfileData(data);
+  }
+};
 
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 768);
     };
     window.addEventListener("resize", handleResize);
-    
+
     checkUser();
-    
+
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Fetch unread message count for badge
+  useEffect(() => {
+    if (userId) {
+      fetchUnreadMessageCount();
+      fetchUnreadNotificationCount();
+
+      const messageSubscription = supabase
+        .channel("messages-count")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `receiver_id=eq.${userId}`,
+          },
+          () => {
+            fetchUnreadMessageCount();
+          },
+        )
+        .subscribe();
+
+      const notificationSubscription = supabase
+        .channel("notifications-count")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            fetchUnreadNotificationCount();
+          },
+        )
+        .subscribe();
+
+      return () => {
+        messageSubscription.unsubscribe();
+        notificationSubscription.unsubscribe();
+      };
+    }
+  }, [userId]);
+
+  const fetchUnreadMessageCount = async () => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("receiver_id", userId)
+      .eq("is_read", false);
+
+    if (!error) {
+      setChatUnreadCount(data?.length || 0);
+    }
+  };
+
+  const fetchUnreadNotificationCount = async () => {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    if (!error) {
+      setUnreadCount(data?.length || 0);
+    }
+  };
+
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
-      setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "User");
+      setUserName(
+        user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+      );
       setUserId(user.id);
+      setUserEmail(user.email || "");
       fetchJobs();
       fetchMyBids(user.id);
     } else {
@@ -71,57 +170,119 @@ const StudentDashboard = () => {
 
   const fetchJobs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('*')
-      .eq('status', 'open')
-      .order('created_at', { ascending: false });
+    const { data: jobsData, error: jobsError } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("status", "open")
+      .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching jobs:", error);
-    } else {
-      setJobs(data || []);
+    if (jobsError) {
+      console.error("Error fetching jobs:", jobsError);
+      setJobs([]);
+      setLoading(false);
+      return;
     }
+
+    if (!jobsData || jobsData.length === 0) {
+      setJobs([]);
+      setLoading(false);
+      return;
+    }
+
+    const clientIds = [...new Set(jobsData.map((job) => job.created_by))];
+
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", clientIds);
+
+    const profileMapTemp: Record<string, any> = {};
+    profilesData?.forEach((profile) => {
+      profileMapTemp[profile.id] = profile;
+    });
+
+    const jobsWithClients = jobsData.map((job) => ({
+      ...job,
+      client: profileMapTemp[job.created_by] || { full_name: "Client" },
+    }));
+
+    setJobs(jobsWithClients);
     setLoading(false);
   };
 
   const fetchMyBids = async (studentId: string) => {
     if (!studentId) return;
-    
-    const { data, error } = await supabase
-      .from('bids')
-      .select('*, jobs(title, budget)')
-      .eq('student_id', studentId);
 
-    if (error) {
-      console.error("Error fetching bids:", error);
-    } else {
-      setMyBids(data || []);
+    // Get accepted bids
+    const { data: bidsData, error: bidsError } = await supabase
+      .from("bids")
+      .select("*, jobs(id, title, budget, created_by)")
+      .eq("student_id", studentId)
+      .eq("status", "accepted");
+
+    if (bidsError) {
+      console.error("Error fetching bids:", bidsError);
+      setMyBids([]);
+      return;
     }
+
+    console.log("Accepted bids for student:", bidsData);
+
+    if (!bidsData || bidsData.length === 0) {
+      setMyBids([]);
+      return;
+    }
+
+    // Get client profiles
+    const clientIds = [...new Set(bidsData.map((bid) => bid.jobs?.created_by))];
+
+    const { data: clientProfiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", clientIds);
+
+    const clientMap: Record<string, any> = {};
+    clientProfiles?.forEach((profile) => {
+      clientMap[profile.id] = profile;
+    });
+
+    const bidsWithDetails = bidsData.map((bid) => ({
+      ...bid,
+      job: bid.jobs
+        ? {
+            ...bid.jobs,
+            client: clientMap[bid.jobs.created_by] || { full_name: "Client" },
+          }
+        : null,
+    }));
+
+    console.log("Bids with client details:", bidsWithDetails);
+    setMyBids(bidsWithDetails);
   };
 
   const handleBid = async () => {
     setBidError("");
-    setErrorMessage("");
-    
+
     if (!bidAmount) {
       setBidError("Please enter your bid amount");
       return;
     }
-    
+
     if (!bidProposal) {
       setBidError("Please write a proposal");
       return;
     }
-    
+
     const bidAmountNum = parseInt(bidAmount);
     const jobBudget = selectedJob.budget;
-    
+
     if (bidAmountNum > jobBudget) {
-      setBidError(`Your bid (₦${bidAmountNum.toLocaleString()}) cannot exceed the job budget (₦${jobBudget.toLocaleString()})`);
+      setBidError(
+        `Your bid (₦${bidAmountNum.toLocaleString()}) cannot exceed the job budget (₦${jobBudget.toLocaleString()})`,
+      );
       return;
     }
-    
+
     if (bidAmountNum <= 0) {
       setBidError("Please enter a valid bid amount");
       return;
@@ -134,29 +295,26 @@ const StudentDashboard = () => {
       student_id: userId,
       amount: bidAmountNum,
       proposal: bidProposal,
-      status: 'pending',
+      status: "pending",
     };
 
-    const { data, error } = await supabase
-      .from('bids')
-      .insert([bidData])
-      .select();
+    const { error } = await supabase.from("bids").insert([bidData]);
 
     if (error) {
       console.error("Error placing bid:", error);
-      setErrorMessage(error.message);
+      setBidError(error.message);
     } else {
       setSuccessBidData({
         jobTitle: selectedJob.title,
         amount: bidAmountNum,
         proposal: bidProposal,
+        clientName: selectedJob.client?.full_name || "the client",
       });
       setShowBidModal(false);
       setBidAmount("");
       setBidProposal("");
-      setBidError("");
       setShowSuccessModal(true);
-      
+
       if (userId) {
         fetchMyBids(userId);
       }
@@ -171,7 +329,22 @@ const StudentDashboard = () => {
     setBidAmount("");
     setBidProposal("");
     setBidError("");
-    setErrorMessage("");
+  };
+
+  const goToChat = (clientId: string, clientName: string) => {
+    if (!clientId) {
+      alert("Cannot start chat: Client information missing");
+      return;
+    }
+    sessionStorage.setItem(
+      "selectedChatUser",
+      JSON.stringify({
+        id: clientId,
+        full_name: clientName || "Client",
+      }),
+    );
+    setActivePage("messages");
+    fetchUnreadMessageCount();
   };
 
   const handleLogout = async () => {
@@ -180,13 +353,32 @@ const StudentDashboard = () => {
   };
 
   const formatBudget = (budget: number) => {
-    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(budget);
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 0,
+    }).format(budget);
   };
 
   const stats = [
-    { icon: <FiBriefcase />, label: "Active Jobs", value: jobs.length.toString(), color: "stat-green" },
-    { icon: <FiCheckCircle />, label: "My Bids", value: myBids.length.toString(), color: "stat-purple" },
-    { icon: <FiDollarSign />, label: "Total Earned", value: "₦0", color: "stat-orange" },
+    {
+      icon: <FiBriefcase />,
+      label: "Active Jobs",
+      value: jobs.length.toString(),
+      color: "stat-green",
+    },
+    {
+      icon: <FiCheckCircle />,
+      label: "My Bids",
+      value: myBids.length.toString(),
+      color: "stat-purple",
+    },
+    {
+      icon: <FiDollarSign />,
+      label: "Total Earned",
+      value: "₦0",
+      color: "stat-orange",
+    },
     { icon: <FiStar />, label: "My Rating", value: "0", color: "stat-blue" },
   ];
 
@@ -194,7 +386,12 @@ const StudentDashboard = () => {
     { icon: <FiHome />, label: "Dashboard", key: "home" },
     { icon: <FiBriefcase />, label: "Browse Jobs", key: "jobs" },
     { icon: <FiTrendingUp />, label: "My Bids", key: "bids" },
-    { icon: <FiMessageSquare />, label: "Messages", key: "messages", badge: "0" },
+    {
+      icon: <FiMessageSquare />,
+      label: "Messages",
+      key: "messages",
+      badge: chatUnreadCount.toString(),
+    },
     { icon: <FiDollarSign />, label: "Earnings", key: "earnings" },
     { icon: <FiUser />, label: "Profile", key: "profile" },
   ];
@@ -202,7 +399,12 @@ const StudentDashboard = () => {
   const bottomNavItems = [
     { icon: <FiHome />, label: "Home", key: "home" },
     { icon: <FiBriefcase />, label: "Jobs", key: "jobs" },
-    { icon: <FiMessageSquare />, label: "Chat", key: "messages", badge: "0" },
+    {
+      icon: <FiMessageSquare />,
+      label: "Chat",
+      key: "messages",
+      badge: chatUnreadCount.toString(),
+    },
     { icon: <FiUser />, label: "Profile", key: "profile" },
     { icon: <FiDollarSign />, label: "Earn", key: "earnings" },
   ];
@@ -216,9 +418,18 @@ const StudentDashboard = () => {
               <h2 className="section-title">All Available Jobs</h2>
             </div>
             {loading ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>Loading jobs...</div>
+              <div style={{ textAlign: "center", padding: "2rem" }}>
+                Loading jobs...
+              </div>
             ) : jobs.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", background: "white", borderRadius: "16px" }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "2rem",
+                  background: "white",
+                  borderRadius: "16px",
+                }}
+              >
                 <p>No jobs available yet. Check back later!</p>
               </div>
             ) : (
@@ -227,18 +438,50 @@ const StudentDashboard = () => {
                   <div className="job-card" key={job.id}>
                     <div className="job-card-top">
                       <span className="job-card-category">{job.category}</span>
-                      <button className="bookmark-btn"><FiBookmark /></button>
+                      <button className="bookmark-btn">
+                        <FiBookmark />
+                      </button>
                     </div>
                     <h3 className="job-card-title">{job.title}</h3>
-                    <p className="job-card-desc">{job.description?.substring(0, 100)}...</p>
+                    <p className="job-card-desc">
+                      {job.description?.substring(0, 100)}...
+                    </p>
                     <div className="job-card-meta">
-                      <span><FiClock /> {job.duration || "Not specified"}</span>
-                      <span><FiMapPin /> {job.location || "Remote"}</span>
-                      <span><FiUsers /> 0 bids</span>
+                      <span>
+                        <FiClock /> {job.duration || "Not specified"}
+                      </span>
+                      <span>
+                        <FiMapPin /> {job.location || "Remote"}
+                      </span>
+                      <span>
+                        <FiUsers /> 0 bids
+                      </span>
                     </div>
-                    <div className="job-card-footer">
-                      <span className="job-card-budget">{formatBudget(job.budget)}</span>
-                      <button className="btn-primary btn-small" onClick={() => openBidModal(job)}>Bid Now</button>
+                    <div className="job-card-client">
+                      <div className="client-avatar">
+                        {job.client?.full_name?.charAt(0).toUpperCase() || "C"}
+                      </div>
+                      <span className="client-name">
+                        Posted by: {job.client?.full_name || "Client"}
+                      </span>
+                    </div>
+                    <div
+                      className="job-card-footer"
+                      style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span className="job-card-budget">
+                        {formatBudget(job.budget)}
+                      </span>
+                      <button
+                        className="btn-primary btn-small"
+                        onClick={() => openBidModal(job)}
+                      >
+                        Bid Now
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -253,9 +496,20 @@ const StudentDashboard = () => {
               <h2 className="section-title">My Bids</h2>
             </div>
             {myBids.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", background: "white", borderRadius: "16px" }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "2rem",
+                  background: "white",
+                  borderRadius: "16px",
+                }}
+              >
                 <p>You haven't placed any bids yet.</p>
-                <button className="btn-primary" onClick={() => setActivePage("jobs")} style={{ marginTop: "1rem" }}>
+                <button
+                  className="btn-primary"
+                  onClick={() => setActivePage("jobs")}
+                  style={{ marginTop: "1rem" }}
+                >
                   Browse Jobs
                 </button>
               </div>
@@ -266,23 +520,56 @@ const StudentDashboard = () => {
                     <div className="bidder-header">
                       <div className="bidder-avatar">💰</div>
                       <div className="bidder-details">
-                        <p className="bidder-name">{bid.jobs?.title || "Job"}</p>
-                        <span className="bidder-job">Bid Amount: {formatBudget(bid.amount)}</span>
+                        <p className="bidder-name">{bid.job?.title || "Job"}</p>
+                        <span className="bidder-job">
+                          Bid Amount: {formatBudget(bid.amount)}
+                        </span>
                       </div>
                     </div>
                     <div className="bidder-stats">
                       <div className="bidder-rating">
                         <span className="rating-value">Status: </span>
-                        <span className={`review-count ${bid.status === 'pending' ? 'pending' : bid.status === 'accepted' ? 'accepted' : 'rejected'}`}>
-                          {bid.status.toUpperCase()}
+                        <span
+                          className={`review-count ${bid.status === "pending" ? "pending" : bid.status === "accepted" ? "accepted" : "rejected"}`}
+                        >
+                          {bid.status === "pending"
+                            ? "Pending"
+                            : bid.status === "accepted"
+                              ? "✓ Accepted!"
+                              : "✗ Rejected"}
                         </span>
                       </div>
                     </div>
                     <div className="bidder-footer">
                       <div className="bid-price">
                         <span className="price-label">Proposal:</span>
-                        <span className="price-amount" style={{ fontSize: "0.8rem", fontWeight: "normal" }}>{bid.proposal?.substring(0, 100)}</span>
+                        <span
+                          className="price-amount"
+                          style={{ fontSize: "0.8rem", fontWeight: "normal" }}
+                        >
+                          {bid.proposal?.substring(0, 100)}
+                        </span>
                       </div>
+                      {bid.status === "accepted" && (
+                        <div className="bidder-actions">
+                          <button
+                            className="btn-primary btn-small"
+                            onClick={() =>
+                              goToChat(
+                                bid.job?.created_by,
+                                bid.job?.client?.full_name,
+                              )
+                            }
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.3rem",
+                            }}
+                          >
+                            <FiMessageCircle /> Message Client
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -291,16 +578,127 @@ const StudentDashboard = () => {
           </>
         );
       case "messages":
-        return (
-          <ChatPage 
-            userId={userId} 
-            userRole="student"
-          />
-        );
+        return <ChatPage userId={userId} userRole="student" />;
       case "earnings":
-        return <div style={{ padding: "2rem", textAlign: "center" }}>Earnings - Coming Soon!</div>;
+  return (
+    <div className="earnings-page">
+      <div className="section-header">
+        <h2 className="section-title">My Earnings</h2>
+      </div>
+      
+      <div className="stats-grid">
+        <div className="stat-card stat-green">
+          <div className="stat-card-icon"><FiDollarSign /></div>
+          <div className="stat-info">
+            <p className="stat-value">
+              {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(
+                myBids.filter(b => b.status === 'accepted').reduce((sum, b) => sum + b.amount, 0)
+              )}
+            </p>
+            <p className="stat-label">Total Earned</p>
+          </div>
+        </div>
+        <div className="stat-card stat-blue">
+          <div className="stat-card-icon"><FiCheckCircle /></div>
+          <div className="stat-info">
+            <p className="stat-value">{myBids.filter(b => b.status === 'accepted').length}</p>
+            <p className="stat-label">Completed Jobs</p>
+          </div>
+        </div>
+        <div className="stat-card stat-purple">
+          <div className="stat-card-icon"><FiTrendingUp /></div>
+          <div className="stat-info">
+            <p className="stat-value">
+              {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(
+                myBids.filter(b => b.status === 'pending').reduce((sum, b) => sum + b.amount, 0)
+              )}
+            </p>
+            <p className="stat-label">Pending</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="section-header">
+        <h2 className="section-title">Payment History</h2>
+      </div>
+      
+      {myBids.filter(b => b.status === 'accepted').length === 0 ? (
+        <div className="empty-state">
+          <FiDollarSign className="empty-icon" />
+          <h3>No transactions yet</h3>
+          <p>Complete jobs to see your earnings here</p>
+        </div>
+      ) : (
+        <div className="transactions-list">
+          {myBids.filter(b => b.status === 'accepted').map((bid) => (
+            <div className="transaction-item" key={bid.id}>
+              <div className="tx-icon tx-out"><FiDollarSign /></div>
+              <div className="tx-info">
+                <p className="tx-title">{bid.job?.title || "Job"}</p>
+                <p className="tx-sub">Completed • {new Date(bid.updated_at).toLocaleDateString()}</p>
+              </div>
+              <div className="tx-right">
+                <span className="tx-amount">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(bid.amount)}</span>
+                <span className="tx-status" style={{ color: "#1a9c6e" }}>Paid</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
       case "profile":
-        return <div style={{ padding: "2rem", textAlign: "center" }}>Profile - Coming Soon!</div>;
+  return (
+    <div className="profile-layout">
+      <div className="profile-card">
+        <div className="profile-photo-wrap">
+          <div className="profile-photo">
+            <div className="profile-photo-placeholder">
+              {userName?.charAt(0).toUpperCase()}
+            </div>
+          </div>
+        </div>
+        <h3 className="profile-name">{profileData?.full_name || userName}</h3>
+        <p className="profile-type">Student · {profileData?.is_verified ? "✓ Verified" : "Pending Verification"}</p>
+        <div className="profile-rating-row">
+          <FiStar className="star" /> <span>{profileData?.rating || "4.8"}</span>
+        </div>
+        <div className="profile-stats">
+          <div className="profile-stat">
+            <span className="profile-stat-value">{profileData?.total_jobs || 0}</span>
+            <span className="profile-stat-label">Jobs Done</span>
+          </div>
+          <div className="profile-stat">
+            <span className="profile-stat-value">{myBids.filter(b => b.status === 'pending').length}</span>
+            <span className="profile-stat-label">In Progress</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="profile-form-card">
+        <h3>Personal Information</h3>
+        <div className="profile-form">
+          <div className="form-group">
+            <label>Full Name</label>
+            <input type="text" value={profileData?.full_name || userName} disabled />
+          </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" value={userEmail} disabled />
+          </div>
+          <div className="form-group">
+            <label>Matric Number</label>
+            <input type="text" value={profileData?.matric_number || "Not set"} disabled />
+          </div>
+          <div className="form-group">
+            <label>Bio / Skills</label>
+            <textarea rows={3} placeholder="Tell clients about your skills..." defaultValue={profileData?.bio || ""} />
+          </div>
+          <button className="auth-btn">Update Profile</button>
+        </div>
+      </div>
+    </div>
+  );
       default:
         return (
           <>
@@ -318,15 +716,27 @@ const StudentDashboard = () => {
 
             <div className="section-header">
               <h2 className="section-title">Available Jobs</h2>
-              <button className="card-link" onClick={() => setActivePage("jobs")}>
+              <button
+                className="card-link"
+                onClick={() => setActivePage("jobs")}
+              >
                 Browse all jobs <FiArrowRight />
               </button>
             </div>
 
             {loading ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>Loading jobs...</div>
+              <div style={{ textAlign: "center", padding: "2rem" }}>
+                Loading jobs...
+              </div>
             ) : jobs.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", background: "white", borderRadius: "16px" }}>
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "2rem",
+                  background: "white",
+                  borderRadius: "16px",
+                }}
+              >
                 <p>No jobs available yet. Check back later!</p>
               </div>
             ) : (
@@ -335,18 +745,42 @@ const StudentDashboard = () => {
                   <div className="job-card" key={job.id}>
                     <div className="job-card-top">
                       <span className="job-card-category">{job.category}</span>
-                      <button className="bookmark-btn"><FiBookmark /></button>
+                      <button className="bookmark-btn">
+                        <FiBookmark />
+                      </button>
                     </div>
                     <h3 className="job-card-title">{job.title}</h3>
-                    <p className="job-card-desc">{job.description?.substring(0, 100)}...</p>
+                    <p className="job-card-desc">
+                      {job.description?.substring(0, 100)}...
+                    </p>
                     <div className="job-card-meta">
-                      <span><FiClock /> {job.duration || "Not specified"}</span>
-                      <span><FiMapPin /> {job.location || "Remote"}</span>
-                      <span><FiUsers /> 0 bids</span>
+                      <span>
+                        <FiClock /> {job.duration || "Not specified"}
+                      </span>
+                      <span>
+                        <FiMapPin /> {job.location || "Remote"}
+                      </span>
+                      <span>
+                        <FiUsers /> 0 bids
+                      </span>
                     </div>
-                    <div className="job-card-footer">
-                      <span className="job-card-budget">{formatBudget(job.budget)}</span>
-                      <button className="btn-primary btn-small" onClick={() => openBidModal(job)}>Bid Now</button>
+                    <div
+                      className="job-card-footer"
+                      style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span className="job-card-budget">
+                        {formatBudget(job.budget)}
+                      </span>
+                      <button
+                        className="btn-primary btn-small"
+                        onClick={() => openBidModal(job)}
+                      >
+                        Bid Now
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -357,20 +791,40 @@ const StudentDashboard = () => {
               <h2 className="section-title">Quick Actions</h2>
             </div>
             <div className="quick-actions">
-              <div className="quick-action-card" onClick={() => setActivePage("jobs")}>
-                <div className="quick-action-icon qa-green"><FiSearch /></div>
+              <div
+                className="quick-action-card"
+                onClick={() => setActivePage("jobs")}
+              >
+                <div className="quick-action-icon qa-green">
+                  <FiSearch />
+                </div>
                 <p>Browse jobs</p>
               </div>
-              <div className="quick-action-card" onClick={() => setActivePage("bids")}>
-                <div className="quick-action-icon qa-blue"><FiTrendingUp /></div>
+              <div
+                className="quick-action-card"
+                onClick={() => setActivePage("bids")}
+              >
+                <div className="quick-action-icon qa-blue">
+                  <FiTrendingUp />
+                </div>
                 <p>My bids</p>
               </div>
-              <div className="quick-action-card" onClick={() => setActivePage("earnings")}>
-                <div className="quick-action-icon qa-purple"><FiDollarSign /></div>
+              <div
+                className="quick-action-card"
+                onClick={() => setActivePage("earnings")}
+              >
+                <div className="quick-action-icon qa-purple">
+                  <FiDollarSign />
+                </div>
                 <p>My earnings</p>
               </div>
-              <div className="quick-action-card" onClick={() => setActivePage("messages")}>
-                <div className="quick-action-icon qa-orange"><FiMessageSquare /></div>
+              <div
+                className="quick-action-card"
+                onClick={() => setActivePage("messages")}
+              >
+                <div className="quick-action-icon qa-orange">
+                  <FiMessageSquare />
+                </div>
                 <p>Messages</p>
               </div>
             </div>
@@ -394,13 +848,17 @@ const StudentDashboard = () => {
           >
             {item.icon}
             <span>{item.label}</span>
-            {item.badge && <span className="nav-badge">{item.badge}</span>}
+            {item.badge && parseInt(item.badge) > 0 && (
+              <span className="nav-badge">{item.badge}</span>
+            )}
           </div>
         ))}
       </nav>
       <div className="sidebar-bottom">
         <div className="sidebar-profile">
-          <div className="sidebar-avatar">{userName.charAt(0).toUpperCase()}</div>
+          <div className="sidebar-avatar">
+            {userName.charAt(0).toUpperCase()}
+          </div>
           <div>
             <p className="sidebar-name">{userName}</p>
             <p className="sidebar-role">Student · Verified ✓</p>
@@ -415,12 +873,26 @@ const StudentDashboard = () => {
 
   return (
     <div className="dashboard">
-      <aside className="sidebar"><SidebarContent /></aside>
+      <aside className="sidebar">
+        <SidebarContent />
+      </aside>
 
-      <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
+      <div
+        className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`}
+        onClick={() => setDrawerOpen(false)}
+      />
       <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
-        <div style={{ display: "flex", justifyContent: "flex-end", padding: "1rem" }}>
-          <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            padding: "1rem",
+          }}
+        >
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="drawer-close-btn"
+          >
             <FiX />
           </button>
         </div>
@@ -431,7 +903,10 @@ const StudentDashboard = () => {
         <div className="topbar">
           <div className="topbar-left">
             {isMobile && (
-              <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)}>
+              <button
+                className="mobile-menu-btn"
+                onClick={() => setDrawerOpen(true)}
+              >
                 <FiMenu />
               </button>
             )}
@@ -445,21 +920,40 @@ const StudentDashboard = () => {
                 {activePage === "profile" && "My Profile"}
               </h1>
               <p>
-                {activePage === "home" && `You have ${jobs.length} new job matches today`}
-                {activePage === "jobs" && "Find the perfect job for your skills"}
+                {activePage === "home" &&
+                  `You have ${jobs.length} new job matches today`}
+                {activePage === "jobs" &&
+                  "Find the perfect job for your skills"}
                 {activePage === "bids" && "Track all your proposals"}
-                {activePage === "messages" && "Chat with your clients"}
+                {activePage === "messages" && "Chat with clients who hired you"}
                 {activePage === "earnings" && "Track all your payments"}
                 {activePage === "profile" && "Manage your student profile"}
               </p>
             </div>
           </div>
           <div className="topbar-actions">
-            <button className="topbar-notif">
-              <FiBell />
-              <span className="notif-dot"></span>
-            </button>
-            <div className="student-topbar-avatar">{userName.charAt(0).toUpperCase()}</div>
+            <div style={{ position: "relative" }}>
+              <button
+                className="topbar-notif"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <FiBell />
+                {unreadCount > 0 && (
+                  <span className="notification-count">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <NotificationsPopup
+                  userId={userId}
+                  onClose={() => setShowNotifications(false)}
+                />
+              )}
+            </div>
+            <div className="student-topbar-avatar">
+              {userName.charAt(0).toUpperCase()}
+            </div>
           </div>
         </div>
 
@@ -476,7 +970,9 @@ const StudentDashboard = () => {
             >
               {item.icon}
               <span>{item.label}</span>
-              {item.badge && <span className="bottom-nav-badge">{item.badge}</span>}
+              {item.badge && parseInt(item.badge) > 0 && (
+                <span className="bottom-nav-badge">{item.badge}</span>
+              )}
             </button>
           ))}
         </div>
@@ -484,43 +980,83 @@ const StudentDashboard = () => {
 
       {/* Bid Modal */}
       {showBidModal && selectedJob && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1000,
-        }}>
-          <div style={{
-            background: "white",
-            borderRadius: "16px",
-            width: "90%",
-            maxWidth: "500px",
-            padding: "1.5rem",
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              width: "90%",
+              maxWidth: "500px",
+              padding: "1.5rem",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1rem",
+              }}
+            >
               <h2 style={{ margin: 0 }}>Place a Bid</h2>
-              <button onClick={() => setShowBidModal(false)} style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer" }}>
+              <button
+                onClick={() => setShowBidModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "1.5rem",
+                  cursor: "pointer",
+                }}
+              >
                 <FiX />
               </button>
             </div>
-            
-            <p><strong>Job:</strong> {selectedJob.title}</p>
-            <p><strong>Job Budget:</strong> {formatBudget(selectedJob.budget)}</p>
-            
+
+            <p>
+              <strong>Job:</strong> {selectedJob.title}
+            </p>
+            <p>
+              <strong>Job Budget:</strong> {formatBudget(selectedJob.budget)}
+            </p>
+
             {bidError && (
-              <div style={{ background: "#f8d7da", color: "#721c24", padding: "0.75rem", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.85rem" }}>
+              <div
+                style={{
+                  background: "#f8d7da",
+                  color: "#721c24",
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  marginBottom: "1rem",
+                  fontSize: "0.85rem",
+                }}
+              >
                 {bidError}
               </div>
             )}
-            
+
             <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Your Bid Amount (₦)</label>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "0.5rem",
+                  fontWeight: 600,
+                }}
+              >
+                Your Bid Amount (₦)
+              </label>
               <input
                 type="number"
                 value={bidAmount}
@@ -533,13 +1069,27 @@ const StudentDashboard = () => {
                   borderRadius: "8px",
                 }}
               />
-              <small style={{ color: "#666", display: "block", marginTop: "0.25rem" }}>
+              <small
+                style={{
+                  color: "#666",
+                  display: "block",
+                  marginTop: "0.25rem",
+                }}
+              >
                 Maximum allowed: {formatBudget(selectedJob.budget)}
               </small>
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 600 }}>Proposal / Cover Letter</label>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "0.5rem",
+                  fontWeight: 600,
+                }}
+              >
+                Proposal / Cover Letter
+              </label>
               <textarea
                 value={bidProposal}
                 onChange={(e) => setBidProposal(e.target.value)}
@@ -581,51 +1131,61 @@ const StudentDashboard = () => {
 
       {/* Success Modal */}
       {showSuccessModal && successBidData && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1001,
-        }}>
-          <div style={{
-            background: "white",
-            borderRadius: "24px",
-            width: "90%",
-            maxWidth: "400px",
-            padding: "2rem",
-            textAlign: "center",
-          }}>
-            <div style={{
-              width: "70px",
-              height: "70px",
-              background: "#1a9c6e",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 1rem",
-            }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1001,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "24px",
+              width: "90%",
+              maxWidth: "400px",
+              padding: "2rem",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "70px",
+                height: "70px",
+                background: "#1a9c6e",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 1rem",
+              }}
+            >
               <FiCheckCircle style={{ color: "white", fontSize: "2.5rem" }} />
             </div>
-            
-            <h2 style={{ color: "#0a0b1e", marginBottom: "0.5rem" }}>Bid Placed Successfully! 🎉</h2>
+
+            <h2 style={{ color: "#0a0b1e", marginBottom: "0.5rem" }}>
+              Bid Placed Successfully! 🎉
+            </h2>
             <p style={{ color: "#6c757d", marginBottom: "1rem" }}>
-              Your bid has been submitted to the client.
+              Your bid has been submitted to {successBidData.clientName}.
             </p>
-            
-            <div style={{
-              background: "#f8f9fa",
-              borderRadius: "12px",
-              padding: "1rem",
-              marginBottom: "1.5rem",
-              textAlign: "left",
-            }}>
+
+            <div
+              style={{
+                background: "#f8f9fa",
+                borderRadius: "12px",
+                padding: "1rem",
+                marginBottom: "1.5rem",
+                textAlign: "left",
+              }}
+            >
               <p style={{ marginBottom: "0.5rem" }}>
                 <strong>Job:</strong> {successBidData.jobTitle}
               </p>
@@ -633,10 +1193,11 @@ const StudentDashboard = () => {
                 <strong>Your Bid:</strong> {formatBudget(successBidData.amount)}
               </p>
               <p style={{ marginBottom: 0 }}>
-                <strong>Proposal:</strong> {successBidData.proposal.substring(0, 100)}...
+                <strong>Proposal:</strong>{" "}
+                {successBidData.proposal.substring(0, 100)}...
               </p>
             </div>
-            
+
             <button
               onClick={() => {
                 setShowSuccessModal(false);
@@ -656,7 +1217,7 @@ const StudentDashboard = () => {
             >
               View My Bids
             </button>
-            
+
             <button
               onClick={() => {
                 setShowSuccessModal(false);

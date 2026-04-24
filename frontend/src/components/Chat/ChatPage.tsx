@@ -9,10 +9,16 @@ interface ChatPageProps {
 
 const ChatPage = ({ userId, userRole }: ChatPageProps) => {
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refreshConversations = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
     <div className="chat-page">
       <ChatList
+        key={refreshKey}
         userId={userId}
         userRole={userRole}
         onSelectConversation={setSelectedConversation}
@@ -22,6 +28,7 @@ const ChatPage = ({ userId, userRole }: ChatPageProps) => {
         currentUserId={userId}
         otherUser={selectedConversation?.user}
         job={selectedConversation?.job}
+        onMessageSent={refreshConversations}
       />
     </div>
   );

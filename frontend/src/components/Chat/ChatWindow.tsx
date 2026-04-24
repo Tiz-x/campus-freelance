@@ -17,20 +17,14 @@ const ChatWindow = ({ currentUserId, otherUser, job, onMessageSent }: ChatWindow
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (otherUser?.id) {
+    if (currentUserId && otherUser?.id) {
       fetchMessages();
       
-      // Subscribe to new messages
       const subscription = supabase
-        .channel(`messages-${currentUserId}-${otherUser.id}`)
+        .channel(`chat-${currentUserId}-${otherUser.id}`)
         .on('postgres_changes', 
-          { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'messages',
-            filter: `sender_id=eq.${otherUser.id},receiver_id=eq.${currentUserId}`
-          }, 
-          () => fetchMessages()
+          { event: '*', schema: 'public', table: 'messages' }, 
+          () => { fetchMessages(); }
         )
         .subscribe();
 
@@ -38,59 +32,76 @@ const ChatWindow = ({ currentUserId, otherUser, job, onMessageSent }: ChatWindow
         subscription.unsubscribe();
       };
     }
-  }, [otherUser?.id, currentUserId]);
+  }, [currentUserId, otherUser?.id]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   const fetchMessages = async () => {
+    if (!currentUserId || !otherUser?.id) return;
+    
     setLoading(true);
     
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUser.id}),and(sender_id.eq.${otherUser.id},receiver_id.eq.${currentUserId})`)
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUser.id}),and(sender_id.eq.${otherUser.id},receiver_id.eq.${currentUserId})`)
+        .order('created_at', { ascending: true });
 
-    if (!error && data) {
-      setMessages(data);
-      
-      // Mark messages as read
-      const unreadMessages = data.filter(m => m.receiver_id === currentUserId && !m.is_read);
-      if (unreadMessages.length > 0) {
-        await supabase
-          .from('messages')
-          .update({ is_read: true })
-          .in('id', unreadMessages.map(m => m.id));
+      if (error) {
+        console.error("Error fetching messages:", error);
+      } else {
+        setMessages(data || []);
+        
+        // Mark unread messages as read
+        const unreadMessages = (data || []).filter(m => m.receiver_id === currentUserId && !m.is_read);
+        if (unreadMessages.length > 0) {
+          await supabase
+            .from('messages')
+            .update({ is_read: true })
+            .in('id', unreadMessages.map(m => m.id));
+          
+          if (onMessageSent) onMessageSent();
+        }
       }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || !currentUserId || !otherUser?.id) return;
     
     setSending(true);
     
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        sender_id: currentUserId,
-        receiver_id: otherUser.id,
-        job_id: job?.id || null,
-        message: newMessage.trim(),
-        is_read: false
-      });
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: currentUserId,
+          receiver_id: otherUser.id,
+          job_id: job?.id || null,
+          message: newMessage.trim(),
+          is_read: false
+        });
 
-    if (!error) {
-      setNewMessage("");
-      fetchMessages();
-      if (onMessageSent) onMessageSent();
+      if (error) {
+        console.error("Error sending message:", error);
+        alert("Failed to send message: " + error.message);
+      } else {
+        setNewMessage("");
+        await fetchMessages();
+        if (onMessageSent) onMessageSent();
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setSending(false);
     }
-    
-    setSending(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -120,21 +131,16 @@ const ChatWindow = ({ currentUserId, otherUser, job, onMessageSent }: ChatWindow
 
   return (
     <div className="chat-window">
-      {/* Header */}
       <div className="chat-window-header">
         <div className="chat-user-info">
           <div className="chat-avatar">
-            {otherUser.avatar_url ? (
-              <img src={otherUser.avatar_url} alt={otherUser.full_name} />
-            ) : (
-              <div className="avatar-placeholder">
-                {otherUser.full_name?.charAt(0).toUpperCase() || <FiUser />}
-              </div>
-            )}
+            <div className="avatar-placeholder">
+              {otherUser.full_name?.charAt(0).toUpperCase() || <FiUser />}
+            </div>
           </div>
           <div>
             <div className="chat-user-name">{otherUser.full_name || 'User'}</div>
-            {job && (
+            {job?.title && (
               <div className="chat-job-info">
                 <FiBriefcase size={12} /> {job.title}
               </div>
@@ -143,14 +149,13 @@ const ChatWindow = ({ currentUserId, otherUser, job, onMessageSent }: ChatWindow
         </div>
       </div>
 
-      {/* Messages */}
       <div className="chat-messages">
         {loading ? (
           <div className="chat-loading">Loading messages...</div>
         ) : messages.length === 0 ? (
           <div className="chat-empty">
             <p>No messages yet</p>
-            <small>Start the conversation!</small>
+            <small>Send a message to start the conversation!</small>
           </div>
         ) : (
           messages.map((msg) => (
@@ -168,7 +173,6 @@ const ChatWindow = ({ currentUserId, otherUser, job, onMessageSent }: ChatWindow
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="chat-input">
         <textarea
           value={newMessage}

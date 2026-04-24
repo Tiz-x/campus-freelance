@@ -27,6 +27,7 @@ const PostJobPage = () => {
     duration: "",
     location: "",
   });
+  
 
   const categories = ["Design", "Development", "Marketing", "Writing", "Video", "Music", "Business"];
   
@@ -87,7 +88,7 @@ const PostJobPage = () => {
       title: formData.title,
       category: formData.category,
       description: formData.description,
-      budget: parseInt(formData.budget), // Convert to number for Paystack
+      budget: parseInt(formData.budget),
       duration: formData.duration,
       location: formData.location || "Remote",
       created_by: user.id,
@@ -107,6 +108,39 @@ const PostJobPage = () => {
       setSubmitting(false);
     } else {
       console.log("Job posted successfully:", data);
+      
+      // Send notifications to all students about the new job
+      if (data && data.length > 0) {
+        const newJob = data[0];
+        
+        // Get all students
+        const { data: students } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'student');
+        
+        if (students && students.length > 0) {
+          // Create notifications for each student
+          const notifications = students.map(student => ({
+            user_id: student.id,
+            type: 'new_job',
+            title: 'New Job Available! 🚀',
+            message: `A new job "${formData.title}" has been posted. Check it out and place your bid!`,
+            related_id: newJob.id,
+            is_read: false
+          }));
+          
+          // Insert in batches to avoid rate limits
+          const batchSize = 10;
+          for (let i = 0; i < notifications.length; i += batchSize) {
+            const batch = notifications.slice(i, i + batchSize);
+            await supabase.from('notifications').insert(batch);
+          }
+          
+          console.log(`Sent notifications to ${students.length} students`);
+        }
+      }
+      
       setSuccess(true);
       setTimeout(() => {
         navigate("/dashboard/sme");
