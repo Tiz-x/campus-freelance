@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import ChatPage from "../../components/Chat/ChatPage";
 import NotificationsPopup from "../../components/NotificationsPopup";
 import PaystackPayment from "../../components/PaystackPayment";
+import StudentProfileModal from "../../components/StudentProfileModal";
 import {
   FiZap,
   FiHome,
@@ -54,6 +55,8 @@ const SMEDashboard = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [showStudentModal, setShowStudentModal] = useState(false);
 
   // Fetch students when Browse Students tab is opened
   useEffect(() => {
@@ -81,6 +84,15 @@ const SMEDashboard = () => {
       fetchTransactions();
     }
   }, [userId]);
+
+  useEffect(() => {
+  if (showBidsModal) {
+    document.body.classList.add('modal-open')
+  } else {
+    document.body.classList.remove('modal-open')
+  }
+  return () => document.body.classList.remove('modal-open')
+}, [showBidsModal])
 
   // Fetch unread message count for badge
   useEffect(() => {
@@ -429,6 +441,15 @@ const SMEDashboard = () => {
     }
   };
 
+  useEffect(() => {
+  if (showBidsModal || showNotifications) {
+    document.body.classList.add('modal-open')
+  } else {
+    document.body.classList.remove('modal-open')
+  }
+  return () => document.body.classList.remove('modal-open')
+}, [showBidsModal, showNotifications])
+
   const viewJobBids = (job: any) => {
     setSelectedJob(job);
     setShowBidsModal(true);
@@ -579,7 +600,7 @@ const SMEDashboard = () => {
                         </div>
                         <h3 className="job-card-title">{job.title}</h3>
                         <p className="job-card-desc">
-                          {job.description?.substring(0, 100)}...
+                          {job.description?.substring(0, 120)}...
                         </p>
                         <div className="job-card-meta">
                           <span>
@@ -620,11 +641,6 @@ const SMEDashboard = () => {
                             <button
                               className="btn-primary btn-small"
                               onClick={() => viewJobBids(job)}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.3rem",
-                              }}
                             >
                               <FiEye /> View Bids ({getBidCount(job.id)})
                             </button>
@@ -637,11 +653,6 @@ const SMEDashboard = () => {
                                     acceptedBid.profiles?.full_name,
                                   )
                                 }
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "0.3rem",
-                                }}
                               >
                                 <FiMessageCircle size={12} /> Message
                               </button>
@@ -657,12 +668,7 @@ const SMEDashboard = () => {
                                     job.title,
                                   )
                                 }
-                                style={{
-                                  background: "#f59e0b",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "0.3rem",
-                                }}
+                                style={{ background: "#f59e0b" }}
                               >
                                 <FiCheckCircle /> Complete & Pay
                               </button>
@@ -701,7 +707,15 @@ const SMEDashboard = () => {
             ) : (
               <div className="bidders-grid">
                 {students.map((student) => (
-                  <div className="bidder-card" key={student.id}>
+                  <div
+                    className="bidder-card"
+                    key={student.id}
+                    onClick={() => {
+                      setSelectedStudent(student);
+                      setShowStudentModal(true);
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
                     <div className="bidder-card-banner">
                       {student.avatar_url ? (
                         <img src={student.avatar_url} alt={student.full_name} />
@@ -793,141 +807,97 @@ const SMEDashboard = () => {
       case "messages":
         return <ChatPage userId={userId} userRole="sme" />;
 
-      case "payments":
-        const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
-        const inEscrow = transactions
-          .filter((t) => t.status === "held")
-          .reduce((sum, t) => sum + t.amount, 0);
-        const completed = transactions.filter(
-          (t) => t.status === "released",
-        ).length;
+      case 'payments':
+  const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0)
+  const inEscrow = transactions.filter(t => t.status === 'held').reduce((sum, t) => sum + t.amount, 0)
+  const released = transactions.filter(t => t.status === 'released').reduce((sum, t) => sum + t.amount, 0)
+  const completedCount = transactions.filter(t => t.status === 'released').length
 
-        return (
-          <div className="payments-page">
-            <div className="section-header">
-              <h2 className="section-title">Payments & Escrow</h2>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div className="section-header">
+        <h2 className="section-title">Payments & Escrow</h2>
+      </div>
+
+      {/* HERO */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0d1b2a 0%, #1a3a4f 100%)',
+        borderRadius: '20px', padding: '2rem', color: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem'
+      }}>
+        <div>
+          <p style={{ fontSize: '0.78rem', fontWeight: 600, opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '0.5rem' }}>Total Spent</p>
+          <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-1px', lineHeight: 1.1, color: '#25d4a0' }}>
+            {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(totalSpent)}
+          </div>
+          <p style={{ fontSize: '0.75rem', opacity: 0.55, marginTop: '0.4rem' }}>Lifetime payments on CampusFreelance</p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          {[
+            { label: 'In Escrow', value: new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(inEscrow) },
+            { label: 'Released', value: completedCount + ' jobs' },
+          ].map((s, i) => (
+            <div key={i} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1rem 1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'white', display: 'block', lineHeight: 1.2 }}>{s.value}</div>
+              <div style={{ fontSize: '0.62rem', opacity: 0.55, textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: '0.25rem' }}>{s.label}</div>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <div className="stats-grid">
-              <div className="stat-card stat-green">
-                <div className="stat-card-icon">
-                  <FiDollarSign />
-                </div>
-                <div className="stat-info">
-                  <p className="stat-value">
-                    {new Intl.NumberFormat("en-NG", {
-                      style: "currency",
-                      currency: "NGN",
-                    }).format(totalSpent)}
-                  </p>
-                  <p className="stat-label">Total Spent</p>
-                </div>
-              </div>
-              <div className="stat-card stat-blue">
-                <div className="stat-card-icon">
-                  <FiLock />
-                </div>
-                <div className="stat-info">
-                  <p className="stat-value">
-                    {new Intl.NumberFormat("en-NG", {
-                      style: "currency",
-                      currency: "NGN",
-                    }).format(inEscrow)}
-                  </p>
-                  <p className="stat-label">In Escrow</p>
-                </div>
-              </div>
-              <div className="stat-card stat-purple">
-                <div className="stat-card-icon">
-                  <FiCheckCircle />
-                </div>
-                <div className="stat-info">
-                  <p className="stat-value">{completed}</p>
-                  <p className="stat-label">Completed</p>
-                </div>
-              </div>
-            </div>
+      {/* ESCROW INFO */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', background: 'rgba(26,156,110,0.05)', border: '1px solid rgba(26,156,110,0.15)', borderRadius: '14px', padding: '1rem 1.25rem' }}>
+        <FiLock style={{ color: '#1a9c6e', fontSize: '1.3rem', flexShrink: 0, marginTop: '0.1rem' }} />
+        <div>
+          <h3 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0d1b2a', marginBottom: '0.22rem' }}>How Escrow Works</h3>
+          <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.55, margin: 0 }}>When you hire a student, your payment is held securely in escrow. Money is only released to the student when you confirm the work is completed to your satisfaction.</p>
+        </div>
+      </div>
 
-            <div className="section-header">
-              <h2 className="section-title">Transaction History</h2>
-            </div>
+      {/* TRANSACTIONS */}
+      <div style={{ background: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0d1b2a', margin: 0 }}>Transaction History</h3>
+          <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 500 }}>{transactions.length} transactions</span>
+        </div>
 
-            {transactionsLoading ? (
-              <div style={{ textAlign: "center", padding: "2rem" }}>
-                Loading transactions...
+        {transactionsLoading ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Loading...</div>
+        ) : transactions.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+            <FiDollarSign style={{ fontSize: '2.5rem', display: 'block', margin: '0 auto 0.75rem', opacity: 0.3 }} />
+            <p style={{ margin: 0, fontWeight: 600 }}>No transactions yet</p>
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem' }}>When you make payments, they'll appear here</p>
+          </div>
+        ) : (
+          transactions.map((tx) => (
+            <div key={tx.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.9rem 1.25rem', borderBottom: '1px solid #f1f5f9', transition: 'background 0.18s' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+            >
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: tx.status === 'released' ? 'rgba(26,156,110,0.1)' : 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', color: tx.status === 'released' ? '#1a9c6e' : '#3b82f6', flexShrink: 0 }}>
+                {tx.status === 'released' ? <FiCheckCircle /> : <FiLock />}
               </div>
-            ) : transactions.length === 0 ? (
-              <div className="empty-state">
-                <FiDollarSign className="empty-icon" />
-                <h3>No transactions yet</h3>
-                <p>When you make payments, they'll appear here</p>
-              </div>
-            ) : (
-              <div className="transactions-list">
-                {transactions.map((tx) => (
-                  <div className="transaction-item" key={tx.id}>
-                    <div
-                      className={`tx-icon ${tx.status === "released" ? "tx-out" : "tx-hold"}`}
-                    >
-                      {tx.status === "released" ? (
-                        <FiCheckCircle />
-                      ) : (
-                        <FiLock />
-                      )}
-                    </div>
-                    <div className="tx-info">
-                      <p className="tx-title">
-                        {tx.jobs?.title || "Job Payment"}
-                      </p>
-                      <p className="tx-sub">
-                        {tx.status === "held"
-                          ? "In Escrow"
-                          : tx.status === "released"
-                            ? "Released"
-                            : "Pending"}{" "}
-                        •{new Date(tx.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="tx-right">
-                      <span className="tx-amount">
-                        {new Intl.NumberFormat("en-NG", {
-                          style: "currency",
-                          currency: "NGN",
-                        }).format(tx.amount)}
-                      </span>
-                      <span
-                        className="tx-status"
-                        style={{
-                          color:
-                            tx.status === "released" ? "#1a9c6e" : "#f59e0b",
-                        }}
-                      >
-                        {tx.status === "held"
-                          ? "Held in Escrow"
-                          : tx.status === "released"
-                            ? "Released"
-                            : "Pending"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="escrow-info-card">
-              <div className="escrow-info-icon">
-                <FiLock />
-              </div>
-              <div>
-                <h3>How Escrow Works</h3>
-                <p>
-                  Payments are held securely until you confirm job completion,
-                  then released to the student.
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0d1b2a', marginBottom: '0.15rem' }}>{tx.jobs?.title || 'Job Payment'}</p>
+                <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: 0 }}>
+                  {tx.status === 'held' ? 'In Escrow' : tx.status === 'released' ? 'Released to student' : 'Pending'} · {new Date(tx.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </p>
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0d1b2a' }}>
+                  {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tx.amount)}
+                </span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: tx.status === 'released' ? '#1a9c6e' : tx.status === 'held' ? '#3b82f6' : '#f59e0b' }}>
+                  {tx.status === 'held' ? 'Held in Escrow' : tx.status === 'released' ? 'Released ✓' : 'Pending'}
+                </span>
+              </div>
             </div>
-          </div>
-        );
+          ))
+        )}
+      </div>
+    </div>
+  )
 
       case "profile":
         return (
@@ -1602,6 +1572,20 @@ const SMEDashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showStudentModal && selectedStudent && (
+        <StudentProfileModal
+          student={selectedStudent}
+          onClose={() => setShowStudentModal(false)}
+          onMessage={(id, name) => goToChat(id, name)}
+          onHire={(student) => {
+            const openJob = jobs.find((j) => j.status === "open");
+            if (openJob)
+              alert(`Invite ${student.full_name} to: ${openJob.title}`);
+            else alert("Post a job first to invite this student");
+          }}
+        />
       )}
     </div>
   );
