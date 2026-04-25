@@ -102,13 +102,14 @@ const VerifyStudentPage = () => {
       }
 
       const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          matric_number: formData.matric_number,
-          selfie_url: selfieUrl,
-          is_verified: true
-        })
-        .eq('id', user.id);
+  .from('profiles')
+  .update({ 
+    matric_number: formData.matric_number,
+    selfie_url: selfieUrl,
+    avatar_url: selfieUrl,
+    is_verified: true
+  })
+  .eq('id', user.id);
 
       if (updateError) {
         setError(updateError.message);

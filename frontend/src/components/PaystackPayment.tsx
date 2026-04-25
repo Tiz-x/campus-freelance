@@ -7,6 +7,7 @@ interface PaystackPaymentProps {
   email: string;
   jobId: string;
   jobTitle: string;
+  studentId: string;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -17,7 +18,7 @@ declare global {
   }
 }
 
-const PaystackPayment = ({ amount, email, jobId, jobTitle, onSuccess, onClose }: PaystackPaymentProps) => {
+const PaystackPayment = ({ amount, email, jobId, jobTitle, studentId, onSuccess, onClose }: PaystackPaymentProps) => {
   const [processing, setProcessing] = useState(false);
 
   const handlePayment = () => {
@@ -25,6 +26,59 @@ const PaystackPayment = ({ amount, email, jobId, jobTitle, onSuccess, onClose }:
     
     const ref = new Date().getTime().toString();
     
+    // Define callback functions
+    const paymentCallback = async (response: any) => {
+      console.log("Payment successful:", response);
+      
+      // Save transaction to database
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Insert transaction with 'held' status (in escrow)
+        const { error } = await supabase.from('transactions').insert({
+          job_id: jobId,
+          amount: amount,
+          reference: response.reference,
+          status: 'held',
+          payer_id: user.id,
+          payee_id: studentId,
+          paystack_charge_id: response.transaction,
+        });
+        
+        if (error) {
+          console.error("Error saving transaction:", error);
+          alert("Payment successful but failed to save transaction. Please contact support.");
+        } else {
+          // Update job status to show payment is in escrow
+          await supabase
+            .from('jobs')
+            .update({ status: 'in_progress' })
+            .eq('id', jobId);
+          
+          // Send notification to student
+          await supabase.from('notifications').insert({
+            user_id: studentId,
+            type: 'payment_escrow',
+            title: 'Payment Held in Escrow! 💰',
+            message: `Payment for "${jobTitle}" (₦${amount.toLocaleString()}) is secured in escrow. Complete the job to receive payment.`,
+            related_id: jobId,
+            is_read: false
+          });
+          
+          alert(`Payment successful! ₦${amount.toLocaleString()} is now held in escrow.`);
+        }
+      }
+      
+      onSuccess();
+      setProcessing(false);
+    };
+
+    const paymentClose = () => {
+      console.log("Payment window closed");
+      onClose();
+      setProcessing(false);
+    };
+
     const handler = window.PaystackPop.setup({
       key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
       email: email,
@@ -32,6 +86,9 @@ const PaystackPayment = ({ amount, email, jobId, jobTitle, onSuccess, onClose }:
       currency: 'NGN',
       ref: ref,
       metadata: {
+        job_id: jobId,
+        job_title: jobTitle,
+        student_id: studentId,
         custom_fields: [
           {
             display_name: "Job ID",
@@ -42,51 +99,16 @@ const PaystackPayment = ({ amount, email, jobId, jobTitle, onSuccess, onClose }:
             display_name: "Job Title",
             variable_name: "job_title",
             value: jobTitle,
+          },
+          {
+            display_name: "Student ID",
+            variable_name: "student_id",
+            value: studentId,
           }
         ]
       },
-      callback: (response: any) => {
-        console.log("Payment successful:", response);
-        
-        // Save transaction to database
-        const saveTransaction = async () => {
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          if (user) {
-            const { error } = await supabase.from('transactions').insert({
-              job_id: jobId,
-              amount: amount,
-              reference: response.reference,
-              status: 'held',
-              payer_id: user.id,
-              paystack_charge_id: response.transaction,
-            });
-            
-            if (error) {
-              console.error("Error saving transaction:", error);
-              alert("Payment successful but failed to save transaction. Please contact support.");
-            } else {
-              await supabase
-                .from('jobs')
-                .update({ status: 'payment_pending' })
-                .eq('id', jobId);
-              
-              alert("Payment successful! Funds are held in escrow until job completion.");
-            }
-          }
-          
-          onSuccess();
-        };
-        
-        saveTransaction();
-        setProcessing(false);
-        handler.close();
-      },
-      onClose: () => {
-        console.log("Payment window closed");
-        onClose();
-        setProcessing(false);
-      },
+      callback: paymentCallback,
+      onClose: paymentClose,
     });
     
     handler.openIframe();

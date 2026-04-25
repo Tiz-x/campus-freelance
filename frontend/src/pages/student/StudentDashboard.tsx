@@ -14,6 +14,8 @@ import {
   FiBell,
   FiCheckCircle,
   FiTrendingUp,
+    FiChevronLeft, 
+  FiChevronRight,
   FiArrowRight,
   FiStar,
   FiSearch,
@@ -51,6 +53,7 @@ const StudentDashboard = () => {
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [userEmail, setUserEmail] = useState("");
   const [profileData, setProfileData] = useState<any>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
 
   useEffect(() => {
@@ -436,54 +439,29 @@ const fetchProfile = async () => {
               <div className="jobs-card-grid">
                 {jobs.map((job) => (
                   <div className="job-card" key={job.id}>
-                    <div className="job-card-top">
-                      <span className="job-card-category">{job.category}</span>
-                      <button className="bookmark-btn">
-                        <FiBookmark />
-                      </button>
-                    </div>
-                    <h3 className="job-card-title">{job.title}</h3>
-                    <p className="job-card-desc">
-                      {job.description?.substring(0, 100)}...
-                    </p>
-                    <div className="job-card-meta">
-                      <span>
-                        <FiClock /> {job.duration || "Not specified"}
-                      </span>
-                      <span>
-                        <FiMapPin /> {job.location || "Remote"}
-                      </span>
-                      <span>
-                        <FiUsers /> 0 bids
-                      </span>
-                    </div>
-                    <div className="job-card-client">
-                      <div className="client-avatar">
-                        {job.client?.full_name?.charAt(0).toUpperCase() || "C"}
-                      </div>
-                      <span className="client-name">
-                        Posted by: {job.client?.full_name || "Client"}
-                      </span>
-                    </div>
-                    <div
-                      className="job-card-footer"
-                      style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span className="job-card-budget">
-                        {formatBudget(job.budget)}
-                      </span>
-                      <button
-                        className="btn-primary btn-small"
-                        onClick={() => openBidModal(job)}
-                      >
-                        Bid Now
-                      </button>
-                    </div>
-                  </div>
+  <div className="job-card-image" />
+  <div className="job-card-body">
+    <div className="job-card-top">
+      <span className="job-card-category">{job.category}</span>
+      <button className="bookmark-btn"><FiBookmark /></button>
+    </div>
+    <h3 className="job-card-title">{job.title}</h3>
+    <p className="job-card-desc">{job.description?.substring(0, 100)}...</p>
+    <div className="job-card-meta">
+      <span><FiClock /> {job.duration || 'Not specified'}</span>
+      <span><FiMapPin /> {job.location || 'Remote'}</span>
+      <span><FiUsers /> 0 bids</span>
+    </div>
+    <div className="job-card-client">
+      <div className="client-avatar">{job.client?.full_name?.charAt(0).toUpperCase() || 'C'}</div>
+      <span className="client-name">Posted by: {job.client?.full_name || 'Client'}</span>
+    </div>
+    <div className="job-card-footer">
+      <span className="job-card-budget">{formatBudget(job.budget)}</span>
+      <button className="btn-primary btn-small" onClick={() => openBidModal(job)}>Bid Now</button>
+    </div>
+  </div>
+</div>
                 ))}
               </div>
             )}
@@ -833,127 +811,130 @@ const fetchProfile = async () => {
     }
   };
 
-  const SidebarContent = () => (
-    <>
-      <div className="sidebar-logo" onClick={() => navigate("/")}>
-        <FiZap className="logo-icon" />
-        <span>CampusFreelance</span>
-      </div>
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
-          <div
-            key={item.key}
-            className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-            onClick={() => setActivePage(item.key)}
-          >
-            {item.icon}
-            <span>{item.label}</span>
-            {item.badge && parseInt(item.badge) > 0 && (
-              <span className="nav-badge">{item.badge}</span>
-            )}
-          </div>
-        ))}
-      </nav>
-      <div className="sidebar-bottom">
-        <div className="sidebar-profile">
-          <div className="sidebar-avatar">
-            {userName.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <p className="sidebar-name">{userName}</p>
-            <p className="sidebar-role">Student · Verified ✓</p>
-          </div>
-        </div>
-        <div className="nav-item logout-item" onClick={handleLogout}>
-          <FiLogOut /> <span>Logout</span>
-        </div>
-      </div>
-    </>
-  );
-
   return (
     <div className="dashboard">
-      <aside className="sidebar">
-        <SidebarContent />
-      </aside>
-
-      <div
-        className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`}
-        onClick={() => setDrawerOpen(false)}
-      />
-      <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            padding: "1rem",
-          }}
-        >
+      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-left" onClick={() => navigate('/')}>
+            <FiZap className="logo-icon" />
+            <span>CampusFreelance</span>
+          </div>
           <button
-            onClick={() => setDrawerOpen(false)}
-            className="drawer-close-btn"
+            className="sidebar-toggle-btn"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           >
-            <FiX />
+            {sidebarCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
           </button>
         </div>
-        <SidebarContent />
+
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <div
+              key={item.key}
+              className={`nav-item ${activePage === item.key ? 'nav-item-active' : ''}`}
+              onClick={() => setActivePage(item.key)}
+              title={sidebarCollapsed ? item.label : ''}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge && parseInt(item.badge) > 0 && (
+                <span className="nav-badge">{item.badge}</span>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <div className="sidebar-profile">
+            <div className="sidebar-avatar">{userName.charAt(0).toUpperCase()}</div>
+            <div>
+              <p className="sidebar-name">{userName}</p>
+              <p className="sidebar-role">Student · Verified ✓</p>
+            </div>
+          </div>
+          <div className="nav-item logout-item" onClick={handleLogout}>
+            <FiLogOut /> <span>Logout</span>
+          </div>
+        </div>
+      </aside>
+
+      <div className={`sidebar-drawer-overlay ${drawerOpen ? 'open' : ''}`} onClick={() => setDrawerOpen(false)} />
+      <div className={`sidebar-drawer ${drawerOpen ? 'open' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem' }}>
+          <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn"><FiX /></button>
+        </div>
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-left" onClick={() => navigate('/')}>
+            <FiZap className="logo-icon" />
+            <span>CampusFreelance</span>
+          </div>
+        </div>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <div
+              key={item.key}
+              className={`nav-item ${activePage === item.key ? 'nav-item-active' : ''}`}
+              onClick={() => { setActivePage(item.key); setDrawerOpen(false); }}
+            >
+              {item.icon} <span>{item.label}</span>
+              {item.badge && parseInt(item.badge) > 0 && <span className="nav-badge">{item.badge}</span>}
+            </div>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="sidebar-profile">
+            <div className="sidebar-avatar">{userName.charAt(0).toUpperCase()}</div>
+            <div>
+              <p className="sidebar-name">{userName}</p>
+              <p className="sidebar-role">Student · Verified ✓</p>
+            </div>
+          </div>
+          <div className="nav-item logout-item" onClick={handleLogout}>
+            <FiLogOut /> <span>Logout</span>
+          </div>
+        </div>
       </div>
 
-      <main className="dashboard-main">
+      <main className={`dashboard-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="topbar">
           <div className="topbar-left">
             {isMobile && (
-              <button
-                className="mobile-menu-btn"
-                onClick={() => setDrawerOpen(true)}
-              >
+              <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)}>
                 <FiMenu />
               </button>
             )}
             <div className="greeting">
               <h1>
-                {activePage === "home" && `Welcome back, ${userName} 👋`}
-                {activePage === "jobs" && "Browse Jobs"}
-                {activePage === "bids" && "My Bids"}
-                {activePage === "messages" && "Messages"}
-                {activePage === "earnings" && "My Earnings"}
-                {activePage === "profile" && "My Profile"}
+                {activePage === 'home' && `Welcome back, ${userName} 👋`}
+                {activePage === 'jobs' && 'Browse Jobs'}
+                {activePage === 'bids' && 'My Bids'}
+                {activePage === 'messages' && 'Messages'}
+                {activePage === 'earnings' && 'My Earnings'}
+                {activePage === 'profile' && 'My Profile'}
               </h1>
               <p>
-                {activePage === "home" &&
-                  `You have ${jobs.length} new job matches today`}
-                {activePage === "jobs" &&
-                  "Find the perfect job for your skills"}
-                {activePage === "bids" && "Track all your proposals"}
-                {activePage === "messages" && "Chat with clients who hired you"}
-                {activePage === "earnings" && "Track all your payments"}
-                {activePage === "profile" && "Manage your student profile"}
+                {activePage === 'home' && `You have ${jobs.length} new job matches today`}
+                {activePage === 'jobs' && 'Find the perfect job for your skills'}
+                {activePage === 'bids' && 'Track all your proposals'}
+                {activePage === 'messages' && 'Chat with clients who hired you'}
+                {activePage === 'earnings' && 'Track all your payments'}
+                {activePage === 'profile' && 'Manage your student profile'}
               </p>
             </div>
           </div>
           <div className="topbar-actions">
-            <div style={{ position: "relative" }}>
-              <button
-                className="topbar-notif"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
+            <div style={{ position: 'relative' }}>
+              <button className="topbar-notif" onClick={() => setShowNotifications(!showNotifications)}>
                 <FiBell />
                 {unreadCount > 0 && (
-                  <span className="notification-count">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
+                  <span className="notification-count">{unreadCount > 9 ? '9+' : unreadCount}</span>
                 )}
               </button>
               {showNotifications && (
-                <NotificationsPopup
-                  userId={userId}
-                  onClose={() => setShowNotifications(false)}
-                />
+                <NotificationsPopup userId={userId} onClose={() => setShowNotifications(false)} />
               )}
             </div>
-            <div className="student-topbar-avatar">
-              {userName.charAt(0).toUpperCase()}
-            </div>
+            <div className="student-topbar-avatar">{userName.charAt(0).toUpperCase()}</div>
           </div>
         </div>
 
@@ -965,7 +946,7 @@ const fetchProfile = async () => {
           {bottomNavItems.map((item) => (
             <button
               key={item.key}
-              className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`}
+              className={`bottom-nav-item ${activePage === item.key ? 'active' : ''}`}
               onClick={() => setActivePage(item.key)}
             >
               {item.icon}
@@ -980,150 +961,49 @@ const fetchProfile = async () => {
 
       {/* Bid Modal */}
       {showBidModal && selectedJob && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "16px",
-              width: "90%",
-              maxWidth: "500px",
-              padding: "1.5rem",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1rem",
-              }}
-            >
-              <h2 style={{ margin: 0 }}>Place a Bid</h2>
-              <button
-                onClick={() => setShowBidModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "1.5rem",
-                  cursor: "pointer",
-                }}
-              >
-                <FiX />
-              </button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '90%', maxWidth: '500px', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Place a Bid</h2>
+              <button onClick={() => setShowBidModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}><FiX /></button>
             </div>
-
-            <p>
-              <strong>Job:</strong> {selectedJob.title}
-            </p>
-            <p>
-              <strong>Job Budget:</strong> {formatBudget(selectedJob.budget)}
-            </p>
-
+            <p style={{ marginBottom: '0.5rem' }}><strong>Job:</strong> {selectedJob.title}</p>
+            <p style={{ marginBottom: '1rem' }}><strong>Budget:</strong> {formatBudget(selectedJob.budget)}</p>
             {bidError && (
-              <div
-                style={{
-                  background: "#f8d7da",
-                  color: "#721c24",
-                  padding: "0.75rem",
-                  borderRadius: "8px",
-                  marginBottom: "1rem",
-                  fontSize: "0.85rem",
-                }}
-              >
+              <div style={{ background: '#f8d7da', color: '#721c24', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem' }}>
                 {bidError}
               </div>
             )}
-
-            <div style={{ marginBottom: "1rem" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "0.5rem",
-                  fontWeight: 600,
-                }}
-              >
-                Your Bid Amount (₦)
-              </label>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem' }}>Your Bid Amount (₦)</label>
               <input
                 type="number"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
                 placeholder="Enter your bid amount"
-                style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                }}
+                style={{ width: '100%', padding: '0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }}
               />
-              <small
-                style={{
-                  color: "#666",
-                  display: "block",
-                  marginTop: "0.25rem",
-                }}
-              >
-                Maximum allowed: {formatBudget(selectedJob.budget)}
+              <small style={{ color: '#64748b', display: 'block', marginTop: '0.25rem', fontSize: '0.75rem' }}>
+                Maximum: {formatBudget(selectedJob.budget)}
               </small>
             </div>
-
-            <div style={{ marginBottom: "1.5rem" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "0.5rem",
-                  fontWeight: 600,
-                }}
-              >
-                Proposal / Cover Letter
-              </label>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem' }}>Proposal / Cover Letter</label>
               <textarea
                 value={bidProposal}
                 onChange={(e) => setBidProposal(e.target.value)}
                 placeholder="Why are you the best fit for this job?"
                 rows={4}
-                style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                  resize: "vertical",
-                }}
+                style={{ width: '100%', padding: '0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '10px', resize: 'vertical', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }}
               />
             </div>
-
             <button
               onClick={handleBid}
               disabled={submitting}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                background: submitting ? "#ccc" : "#1a9c6e",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontWeight: 600,
-                cursor: submitting ? "not-allowed" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-              }}
+              className="btn-primary"
+              style={{ width: '100%', justifyContent: 'center', padding: '0.8rem' }}
             >
-              {submitting ? "Submitting..." : "Submit Bid"} <FiSend />
+              {submitting ? 'Submitting...' : 'Submit Bid'} <FiSend />
             </button>
           </div>
         </div>
@@ -1131,115 +1011,28 @@ const fetchProfile = async () => {
 
       {/* Success Modal */}
       {showSuccessModal && successBidData && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1001,
-          }}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "24px",
-              width: "90%",
-              maxWidth: "400px",
-              padding: "2rem",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                width: "70px",
-                height: "70px",
-                background: "#1a9c6e",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 1rem",
-              }}
-            >
-              <FiCheckCircle style={{ color: "white", fontSize: "2.5rem" }} />
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001 }}>
+          <div style={{ background: 'white', borderRadius: '24px', width: '90%', maxWidth: '400px', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ width: '70px', height: '70px', background: '#1a9c6e', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+              <FiCheckCircle style={{ color: 'white', fontSize: '2.5rem' }} />
             </div>
-
-            <h2 style={{ color: "#0a0b1e", marginBottom: "0.5rem" }}>
-              Bid Placed Successfully! 🎉
-            </h2>
-            <p style={{ color: "#6c757d", marginBottom: "1rem" }}>
-              Your bid has been submitted to {successBidData.clientName}.
-            </p>
-
-            <div
-              style={{
-                background: "#f8f9fa",
-                borderRadius: "12px",
-                padding: "1rem",
-                marginBottom: "1.5rem",
-                textAlign: "left",
-              }}
-            >
-              <p style={{ marginBottom: "0.5rem" }}>
-                <strong>Job:</strong> {successBidData.jobTitle}
-              </p>
-              <p style={{ marginBottom: "0.5rem" }}>
-                <strong>Your Bid:</strong> {formatBudget(successBidData.amount)}
-              </p>
-              <p style={{ marginBottom: 0 }}>
-                <strong>Proposal:</strong>{" "}
-                {successBidData.proposal.substring(0, 100)}...
-              </p>
+            <h2 style={{ marginBottom: '0.5rem' }}>Bid Placed! 🎉</h2>
+            <p style={{ color: '#64748b', marginBottom: '1rem' }}>Your bid has been submitted to {successBidData.clientName}.</p>
+            <div style={{ background: '#f8f9fa', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+              <p style={{ marginBottom: '0.5rem', fontSize: '0.875rem' }}><strong>Job:</strong> {successBidData.jobTitle}</p>
+              <p style={{ marginBottom: '0', fontSize: '0.875rem' }}><strong>Your Bid:</strong> {formatBudget(successBidData.amount)}</p>
             </div>
-
-            <button
-              onClick={() => {
-                setShowSuccessModal(false);
-                setActivePage("bids");
-              }}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                background: "#1a9c6e",
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                marginBottom: "0.75rem",
-              }}
-            >
+            <button onClick={() => { setShowSuccessModal(false); setActivePage('bids'); }} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', marginBottom: '0.75rem' }}>
               View My Bids
             </button>
-
-            <button
-              onClick={() => {
-                setShowSuccessModal(false);
-              }}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                background: "transparent",
-                color: "#1a9c6e",
-                border: "1px solid #1a9c6e",
-                borderRadius: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={() => setShowSuccessModal(false)} className="btn-outline" style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}>
               Continue Browsing
             </button>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 };
 
 export default StudentDashboard;
