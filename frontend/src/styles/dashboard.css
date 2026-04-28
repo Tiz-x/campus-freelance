@@ -42,7 +42,7 @@
 ================================ */
 .sidebar {
   width: var(--sidebar-width);
-  background: var(--secondary);
+  background: #0d3b2e !important;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -52,6 +52,10 @@
   z-index: 100;
   transition: width 0.25s ease;
   overflow: hidden;
+}
+
+.sidebar-drawer {
+  background: #0d3b2e !important;
 }
 
 .sidebar.collapsed {
@@ -1517,4 +1521,350 @@ body.modal-open .dashboard-main {
 
 body.modal-open .sidebar {
   pointer-events: none;
+}
+
+
+
+
+/* ========================================
+   MOBILE SIDEBAR DRAWER - FIXED STYLES
+======================================== */
+@media (max-width: 768px) {
+  /* Drawer overlay */
+  .sidebar-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 199;
+  }
+  
+  .sidebar-drawer-overlay.open {
+    display: block;
+  }
+  
+  /* Drawer container */
+  .sidebar-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    background: #0d3b2e !important;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .sidebar-drawer.open {
+    transform: translateX(0);
+  }
+  
+  /* Close button */
+  .drawer-header-right {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem;
+  }
+  
+  .drawer-close-btn-right {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+  }
+  
+  .drawer-close-btn-right:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  /* Navigation inside drawer */
+  .drawer-nav {
+    flex: 1;
+    padding: 0 1rem;
+  }
+  
+  .drawer-nav .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 0.25rem;
+  }
+  
+  .drawer-nav .nav-item svg {
+    font-size: 1.2rem;
+    min-width: 24px;
+  }
+  
+  .drawer-nav .nav-item span {
+    font-size: 0.9rem;
+  }
+  
+  .drawer-nav .nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  
+  .drawer-nav .nav-item-active {
+    background: #1a9c6e !important;
+    color: white !important;
+  }
+  
+  .drawer-nav .nav-badge {
+    margin-left: auto;
+    background: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 50px;
+    min-width: 20px;
+    text-align: center;
+  }
+  
+  /* Drawer bottom section */
+  .drawer-bottom {
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: auto;
+  }
+  
+  /* Profile section */
+  .drawer-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .drawer-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: white;
+    color: #0d3b2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+  
+  .drawer-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.2rem;
+  }
+  
+  .drawer-role {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  /* Logout button */
+  .drawer-logout {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    color: rgba(239, 68, 68, 0.8) !important;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .drawer-logout svg {
+    font-size: 1.2rem;
+  }
+  
+  .drawer-logout span {
+    font-size: 0.9rem;
+  }
+  
+  .drawer-logout:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #f87171 !important;
+  }
+}
+
+
+
+
+
+/* ========================================
+   NEW LAYOUT - Sticky Topbar
+======================================== */
+
+/* Main content area - contains sticky topbar + scrollable content */
+.main-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.25s ease;
+}
+
+.dashboard-main.sidebar-collapsed .main-content-area {
+  margin-left: var(--sidebar-collapsed);
+}
+
+/* For mobile - no sidebar margin */
+@media (max-width: 768px) {
+  .main-content-area {
+    margin-left: 0 !important;
+  }
+}
+
+/* STICKY TOPBAR - Does NOT scroll */
+.topbar-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #f5f7fb;
+  padding: 0.75rem 1rem 0 1rem;
+  flex-shrink: 0;
+}
+
+.topbar {
+  background: white;
+  border-radius: 20px;
+  padding: 0.6rem 1rem;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  gap: 0.75rem;
+  min-height: 64px;
+  width: 100%;
+}
+
+.topbar-left {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-logo-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.75rem;
+  border-radius: 40px;
+  transition: all 0.2s;
+}
+
+.logo-icon-topbar {
+  color: #1a9c6e;
+  font-size: 1.3rem;
+}
+
+.logo-text-topbar {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.topbar-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* SCROLLABLE CONTENT */
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+/* Hide scrollbar for cleaner look on mobile */
+.scrollable-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .topbar-sticky {
+    padding: 0.5rem;
+  }
+  
+  .topbar {
+    padding: 0.4rem 0.75rem;
+    min-height: 56px;
+  }
+  
+  .scrollable-content {
+    padding: 0 0.75rem 0.75rem 0.75rem;
+  }
+  
+  .mobile-menu-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .logo-icon-topbar {
+    font-size: 1.1rem;
+  }
+  
+  .logo-text-topbar {
+    font-size: 0.85rem;
+  }
+  
+  .topbar-notif, .student-topbar-avatar {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Remove old dashboard-main padding */
+.dashboard-main {
+  margin-left: 0;
+  padding: 0;
 }

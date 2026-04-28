@@ -1,7 +1,6 @@
 import { FiX, FiStar, FiCheckCircle, FiHash, FiMessageCircle, FiBriefcase, FiExternalLink, FiAward } from 'react-icons/fi'
 import { useEffect } from 'react'
 
-
 interface Props {
   student: any
   onClose: () => void
@@ -9,13 +8,8 @@ interface Props {
   onHire: (student: any) => void
 }
 
-
-useEffect(() => {
-  document.body.classList.add('modal-open')
-  return () => document.body.classList.remove('modal-open')
-}, [])
-
 const StudentProfileModal = ({ student, onClose, onMessage, onHire }: Props) => {
+
   useEffect(() => {
     document.body.classList.add('modal-open')
     return () => document.body.classList.remove('modal-open')
