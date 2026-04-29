@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiBriefcase, FiBook, FiArrowRight, FiZap } from "react-icons/fi";
+import { FiBriefcase, FiBook, FiArrowRight } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 
 const ChooseRolePage = () => {
@@ -15,12 +15,7 @@ const ChooseRolePage = () => {
 
   return (
     <div className="role-page">
-      <div className="role-header">
-        <div className="auth-logo" onClick={() => navigate("/")}>
-          <FiZap className="logo-icon" />
-          <span>CampusFreelance</span>
-        </div>
-      </div>
+    
 
       <div className="role-content">
         <h1>Welcome back, {profile?.full_name}!</h1>

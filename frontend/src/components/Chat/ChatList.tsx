@@ -9,7 +9,7 @@ interface ChatListProps {
   selectedConversationId: string | null;
 }
 
-const ChatList = ({ userId, userRole, onSelectConversation, selectedConversationId }: ChatListProps) => {
+const ChatList = ({ userId, onSelectConversation, selectedConversationId }: ChatListProps) => {
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
