@@ -15,8 +15,6 @@ import {
   FiDollarSign,
   FiUser,
   FiMenu,
-  FiChevronLeft,
-  FiChevronRight,
   FiLogOut,
   FiBell,
   FiPlus,

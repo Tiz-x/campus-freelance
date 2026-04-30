@@ -15,8 +15,6 @@ import {
   FiLogOut,
   FiBell,
   FiCheckCircle,
-  FiChevronLeft,
-  FiChevronRight,
   FiArrowRight,
   FiSearch,
   FiClock,
