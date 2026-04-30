@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
 import {
   FiZap,
   FiArrowLeft,
@@ -10,11 +11,13 @@ import {
   FiChevronRight,
   FiCheckCircle,
   FiAlertCircle,
+  FiUser,
 } from "react-icons/fi";
 import "../../styles/postjob.css";
 
 const PostJobPage = () => {
   const navigate = useNavigate();
+  const { profile, user: authUser } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -28,10 +31,8 @@ const PostJobPage = () => {
     location: "",
   });
   
-
   const categories = ["Design", "Development", "Marketing", "Writing", "Video", "Music", "Business"];
   
-  // Budget options with numeric values (in Naira)
   const budgets = [
     { label: "₦5,000 - ₦15,000", value: 10000 },
     { label: "₦15,000 - ₦30,000", value: 22500 },
@@ -66,23 +67,38 @@ const PostJobPage = () => {
 
   const nextStep = () => {
     setCurrentStep(currentStep + 1);
+    window.scrollTo(0, 0);
   };
 
   const prevStep = () => {
     setCurrentStep(currentStep - 1);
+    window.scrollTo(0, 0);
+  };
+
+  const goToDashboard = () => {
+    navigate("/dashboard/sme");
   };
 
   const handleSubmit = async () => {
-    setSubmitting(true);
-    setError("");
-
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      setError("You must be logged in to post a job");
-      setSubmitting(false);
+    if (submitting) {
+      console.log("Already submitting");
       return;
     }
+    
+    console.log("=== HANDLE SUBMIT STARTED ===");
+    
+    if (!authUser?.id) {
+      setError("You must be logged in");
+      return;
+    }
+
+    if (!formData.title || !formData.category || !formData.description || !formData.budget || !formData.duration) {
+      setError("Please fill all fields");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
 
     const jobData = {
       title: formData.title,
@@ -91,56 +107,25 @@ const PostJobPage = () => {
       budget: parseInt(formData.budget),
       duration: formData.duration,
       location: formData.location || "Remote",
-      created_by: user.id,
+      created_by: authUser.id,
       status: "open",
     };
 
-    console.log("Submitting job data:", jobData);
+    console.log("Inserting:", jobData);
 
-    const { data, error: insertError } = await supabase
-      .from('jobs')
-      .insert([jobData])
-      .select();
+    // Use a simple insert without .select()
+    const { error } = await supabase
+      .from("jobs")
+      .insert(jobData);
 
-    if (insertError) {
-      console.error("Error posting job:", insertError);
-      setError(insertError.message);
+    console.log("Insert error:", error);
+
+    if (error) {
+      console.error("Error:", error);
+      setError(error.message);
       setSubmitting(false);
     } else {
-      console.log("Job posted successfully:", data);
-      
-      // Send notifications to all students about the new job
-      if (data && data.length > 0) {
-        const newJob = data[0];
-        
-        // Get all students
-        const { data: students } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('role', 'student');
-        
-        if (students && students.length > 0) {
-          // Create notifications for each student
-          const notifications = students.map(student => ({
-            user_id: student.id,
-            type: 'new_job',
-            title: 'New Job Available! 🚀',
-            message: `A new job "${formData.title}" has been posted. Check it out and place your bid!`,
-            related_id: newJob.id,
-            is_read: false
-          }));
-          
-          // Insert in batches to avoid rate limits
-          const batchSize = 10;
-          for (let i = 0; i < notifications.length; i += batchSize) {
-            const batch = notifications.slice(i, i + batchSize);
-            await supabase.from('notifications').insert(batch);
-          }
-          
-          console.log(`Sent notifications to ${students.length} students`);
-        }
-      }
-      
+      console.log("Success!");
       setSuccess(true);
       setTimeout(() => {
         navigate("/dashboard/sme");
@@ -151,11 +136,11 @@ const PostJobPage = () => {
   return (
     <div className="postjob-page">
       <div className="postjob-header">
-        <div className="postjob-logo" onClick={() => navigate("/dashboard/sme")}>
+        <div className="postjob-logo" onClick={goToDashboard}>
           <FiZap className="logo-icon" />
           <span>CampusFreelance</span>
         </div>
-        <button className="back-to-dash" onClick={() => navigate("/dashboard/sme")}>
+        <button className="back-to-dash" onClick={goToDashboard}>
           <FiArrowLeft /> Back to Dashboard
         </button>
       </div>
@@ -178,19 +163,19 @@ const PostJobPage = () => {
           </div>
         </div>
 
-        <div className="postjob-content">
+        <div className="postjob-two-column">
           <div className="postjob-form-wrap">
             {success ? (
-              <div className="success-message" style={{ textAlign: "center", padding: "3rem" }}>
-                <FiCheckCircle style={{ fontSize: "4rem", color: "#1a9c6e", marginBottom: "1rem" }} />
+              <div className="success-message">
+                <FiCheckCircle className="success-icon" />
                 <h2>Job Posted Successfully! 🎉</h2>
                 <p>Your job has been posted to the marketplace.</p>
-                <p style={{ color: "#6c757d" }}>Redirecting to dashboard...</p>
+                <p className="redirect-text">Redirecting to dashboard...</p>
               </div>
             ) : (
               <>
                 {error && (
-                  <div className="error-message" style={{ background: "#fee2e2", color: "#dc2626", padding: "1rem", borderRadius: "12px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <div className="error-message">
                     <FiAlertCircle />
                     <span>{error}</span>
                   </div>
@@ -209,27 +194,18 @@ const PostJobPage = () => {
                         placeholder="e.g., Logo Design for my bakery"
                         value={formData.title}
                         onChange={handleChange}
-                        style={{ width: "100%", padding: "0.75rem", border: "1px solid #ddd", borderRadius: "8px" }}
-                        required
                       />
                     </div>
 
                     <div className="form-group">
                       <label>Category *</label>
-                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <div className="category-buttons">
                         {categories.map((cat) => (
                           <button
                             key={cat}
                             type="button"
                             onClick={() => handleCategorySelect(cat)}
-                            style={{
-                              padding: "0.5rem 1rem",
-                              borderRadius: "20px",
-                              border: "1px solid #ddd",
-                              background: formData.category === cat ? "#1a9c6e" : "white",
-                              color: formData.category === cat ? "white" : "#333",
-                              cursor: "pointer"
-                            }}
+                            className={`category-btn ${formData.category === cat ? "active" : ""}`}
                           >
                             {cat}
                           </button>
@@ -242,30 +218,27 @@ const PostJobPage = () => {
                       <textarea
                         name="description"
                         rows={5}
-                        placeholder="Describe what you need done, requirements, and expectations..."
+                        placeholder="Describe what you need done..."
                         value={formData.description}
                         onChange={handleChange}
-                        style={{ width: "100%", padding: "0.75rem", border: "1px solid #ddd", borderRadius: "8px" }}
-                        required
                       />
                     </div>
 
                     <div className="form-group">
                       <label>Location</label>
-                      <div style={{ position: "relative" }}>
-                        <FiMapPin style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#999" }} />
+                      <div className="input-with-icon">
+                        <FiMapPin className="input-icon" />
                         <input
                           type="text"
                           name="location"
-                          placeholder="e.g., Akungba-Akoko or Remote"
+                          placeholder="e.g., Where are you in Akungba"
                           value={formData.location}
                           onChange={handleChange}
-                          style={{ width: "100%", padding: "0.75rem 0.75rem 0.75rem 2rem", border: "1px solid #ddd", borderRadius: "8px" }}
                         />
                       </div>
                     </div>
 
-                    <button onClick={nextStep} disabled={!formData.title || !formData.category || !formData.description} style={{ marginTop: "1rem", padding: "0.75rem 1.5rem", background: "#1a9c6e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}>
+                    <button onClick={nextStep} disabled={!formData.title || !formData.category || !formData.description} className="continue-btn">
                       Continue <FiChevronRight />
                     </button>
                   </div>
@@ -278,23 +251,13 @@ const PostJobPage = () => {
 
                     <div className="form-group">
                       <label>Budget (₦ Naira) *</label>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.5rem" }}>
+                      <div className="budget-grid">
                         {budgets.map((budget) => (
                           <button
                             key={budget.value}
                             type="button"
                             onClick={() => handleBudgetSelect(budget.value)}
-                            style={{
-                              padding: "0.5rem 1rem",
-                              borderRadius: "8px",
-                              border: "1px solid #ddd",
-                              background: formData.budget === budget.value.toString() ? "#1a9c6e" : "white",
-                              color: formData.budget === budget.value.toString() ? "white" : "#333",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.5rem"
-                            }}
+                            className={`budget-btn ${formData.budget === budget.value.toString() ? "active" : ""}`}
                           >
                             <FiDollarSign /> {budget.label}
                           </button>
@@ -304,23 +267,13 @@ const PostJobPage = () => {
 
                     <div className="form-group">
                       <label>Expected Duration *</label>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <div className="duration-list">
                         {durations.map((duration) => (
                           <button
                             key={duration}
                             type="button"
                             onClick={() => handleDurationSelect(duration)}
-                            style={{
-                              padding: "0.5rem 1rem",
-                              borderRadius: "8px",
-                              border: "1px solid #ddd",
-                              background: formData.duration === duration ? "#1a9c6e" : "white",
-                              color: formData.duration === duration ? "white" : "#333",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.5rem"
-                            }}
+                            className={`duration-btn ${formData.duration === duration ? "active" : ""}`}
                           >
                             <FiClock /> {duration}
                           </button>
@@ -328,9 +281,9 @@ const PostJobPage = () => {
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-                      <button onClick={prevStep} style={{ padding: "0.75rem 1.5rem", background: "#ccc", border: "none", borderRadius: "8px", cursor: "pointer" }}>Back</button>
-                      <button onClick={nextStep} disabled={!formData.budget || !formData.duration} style={{ padding: "0.75rem 1.5rem", background: "#1a9c6e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}>
+                    <div className="step-buttons">
+                      <button onClick={prevStep} className="back-btn">Back</button>
+                      <button onClick={nextStep} disabled={!formData.budget || !formData.duration} className="continue-btn">
                         Continue <FiChevronRight />
                       </button>
                     </div>
@@ -342,18 +295,20 @@ const PostJobPage = () => {
                     <h2>Review your job posting</h2>
                     <p>Check everything looks good before posting</p>
 
-                    <div style={{ background: "#f8f9fa", padding: "1rem", borderRadius: "12px", marginBottom: "1rem" }}>
-                      <h3 style={{ marginBottom: "0.5rem" }}>{formData.title || "Untitled Job"}</h3>
-                      <p><strong>Category:</strong> {formData.category}</p>
-                      <p><strong>Budget:</strong> {getBudgetLabel(formData.budget)}</p>
-                      <p><strong>Duration:</strong> {formData.duration}</p>
-                      <p><strong>Location:</strong> {formData.location || "Remote"}</p>
-                      <p><strong>Description:</strong> {formData.description}</p>
+                    <div className="review-card">
+                      <h3>{formData.title || "Untitled Job"}</h3>
+                      <div className="review-details">
+                        <p><strong>Category:</strong> {formData.category}</p>
+                        <p><strong>Budget:</strong> {getBudgetLabel(formData.budget)}</p>
+                        <p><strong>Duration:</strong> {formData.duration}</p>
+                        <p><strong>Location:</strong> {formData.location || "Remote"}</p>
+                        <p><strong>Description:</strong> {formData.description}</p>
+                      </div>
                     </div>
 
-                    <div style={{ display: "flex", gap: "1rem" }}>
-                      <button onClick={prevStep} style={{ padding: "0.75rem 1.5rem", background: "#ccc", border: "none", borderRadius: "8px", cursor: "pointer" }}>Back</button>
-                      <button onClick={handleSubmit} disabled={submitting} style={{ padding: "0.75rem 1.5rem", background: "#1a9c6e", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}>
+                    <div className="step-buttons">
+                      <button onClick={prevStep} className="back-btn">Back</button>
+                      <button onClick={handleSubmit} disabled={submitting} className="submit-btn">
                         {submitting ? "Posting..." : "Post Job"} <FiCheckCircle />
                       </button>
                     </div>
@@ -363,23 +318,38 @@ const PostJobPage = () => {
             )}
           </div>
 
-          {/* Preview Panel */}
           <div className="postjob-preview">
-            <h3>PREVIEW</h3>
-            <div style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #ddd" }}>
-              <div style={{ display: "inline-block", background: "#1a9c6e10", color: "#1a9c6e", padding: "0.25rem 0.75rem", borderRadius: "20px", fontSize: "0.75rem", marginBottom: "0.5rem" }}>
-                {formData.category || "Category"}
+            <h3>Live Preview</h3>
+            <div className="preview-card">
+              <div className="preview-header">
+                <div className="preview-avatar">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Company" />
+                  ) : (
+                    <FiUser />
+                  )}
+                </div>
+                <div className="preview-company">
+                  <div className="preview-company-name">{profile?.full_name || "Your Company"}</div>
+                  <div className="preview-location">
+                    <FiMapPin size={12} /> {formData.location || "Remote"}
+                  </div>
+                </div>
               </div>
-              <h4 style={{ marginBottom: "0.5rem" }}>{formData.title || "Job Title"}</h4>
-              <p style={{ color: "#666", fontSize: "0.85rem" }}>{formData.description || "Job description will appear here..."}</p>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid #ddd" }}>
-                <span style={{ fontWeight: "bold", color: "#1a9c6e" }}>{getBudgetLabel(formData.budget)}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}><FiClock /> {formData.duration || "Not set"}</span>
+              
+              <div className="preview-category">{formData.category || "Category"}</div>
+              <h4>{formData.title || "Job Title"}</h4>
+              <p>{formData.description || "Job description will appear here..."}</p>
+              
+              <div className="preview-footer">
+                <span className="preview-budget">{getBudgetLabel(formData.budget)}</span>
+                <span className="preview-duration"><FiClock /> {formData.duration || "Not set"}</span>
               </div>
             </div>
-            <div style={{ marginTop: "1rem", background: "#f8f9fa", padding: "1rem", borderRadius: "12px" }}>
-              <h4 style={{ marginBottom: "0.5rem" }}>Tips for a great job post:</h4>
-              <ul style={{ margin: 0, paddingLeft: "1rem", color: "#666" }}>
+            
+            <div className="tips-card">
+              <h4>Tips for a great job post:</h4>
+              <ul>
                 <li>Be specific about your requirements</li>
                 <li>Set a realistic budget range</li>
                 <li>Provide examples if possible</li>

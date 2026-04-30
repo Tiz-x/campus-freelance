@@ -215,7 +215,7 @@
   margin-bottom: 0.75rem;
 }
 
-.company-badge {
+/* .company-badge {
   width: 44px;
   height: 44px;
   border-radius: 12px;
@@ -226,7 +226,7 @@
   font-size: 1rem;
   font-weight: 700;
   color: #1a9c6e;
-}
+} */
 
 .company-details h4 {
   font-size: 0.85rem;
@@ -822,4 +822,127 @@
   .scrollable-content {
     padding: 0.25rem 0.75rem 0.75rem 0.75rem;
   }
+}
+
+
+
+
+
+/* Loading skeleton */
+.skeleton-card {
+  background: white;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  padding: 1rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #e2e8f0;
+}
+
+.skeleton-text {
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+.skeleton-text.long {
+  width: 90%;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+
+/* Avatar image styles */
+.company-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6d9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.company-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Topbar avatar */
+.student-topbar-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid rgba(26, 156, 110, 0.2);
+  overflow: hidden;
+}
+
+.student-topbar-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Profile page avatar */
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 0.75rem;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

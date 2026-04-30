@@ -1,13 +1,23 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
-import type{ User } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 
 type ProfileType = {
   id: string
   email: string
   full_name: string
   role: 'sme' | 'student'
+  avatar_url: string | null
+  is_verified: boolean
+  phone: string | null
+  address: string | null
+  bio: string | null
+  total_jobs: number
+  rating: number
+  skills: string[]
+  matric_number: string | null
+  portfolio_url: string | null
 }
 
 type AuthContextType = {
@@ -16,6 +26,7 @@ type AuthContextType = {
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -24,45 +35,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<ProfileType | null>(null)
   const [loading, setLoading] = useState(true)
+  const isMountedRef = useRef<boolean>(true)
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+      
+      if (profileData && isMountedRef.current) {
+        setProfile(profileData as ProfileType)
+      }
+      return profileData
+    } catch (err) {
+      console.log('Profile fetch error:', err)
+      return null
+    }
+  }
+
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchProfile(user.id)
+    }
+  }
 
   useEffect(() => {
-    let isMounted = true
-
+    isMountedRef.current = true
+    
     const checkAuth = async () => {
       try {
-        console.log('Checking auth...')
-        
-        // Get session
         const { data: { session } } = await supabase.auth.getSession()
         
-        if (!isMounted) return
+        if (!isMountedRef.current) return
         
         if (session?.user) {
-          console.log('Session found for:', session.user.email)
           setUser(session.user)
-          
-          // Try to get profile (but don't wait forever)
-          try {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle()
-            
-            if (profileData) {
-              setProfile(profileData as ProfileType)
-            }
-          } catch (profileErr) {
-            console.log('Profile fetch error:', profileErr)
-          }
-        } else {
-          console.log('No session found')
+          await fetchProfile(session.user.id)
         }
       } catch (err) {
         console.error('Auth error:', err)
       } finally {
-        if (isMounted) {
-          console.log('Setting loading to false')
+        if (isMountedRef.current) {
           setLoading(false)
         }
       }
@@ -70,8 +85,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     checkAuth()
 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!isMountedRef.current) return
+        
+        if (session?.user) {
+          setUser(session.user)
+          await fetchProfile(session.user.id)
+        } else {
+          setUser(null)
+          setProfile(null)
+        }
+        setLoading(false)
+      }
+    )
+
     return () => {
-      isMounted = false
+      isMountedRef.current = false
+      subscription.unsubscribe()
     }
   }, [])
 
@@ -83,16 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     if (data?.user) {
       setUser(data.user)
-      // Try to get profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .maybeSingle()
-      
-      if (profileData) {
-        setProfile(profileData as ProfileType)
-      }
+      await fetchProfile(data.user.id)
     }
     
     return { error }
@@ -100,13 +122,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     localStorage.removeItem('pendingSignup')
+    sessionStorage.removeItem('lastRoute')
+    sessionStorage.clear()
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from './context/AuthContext'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
@@ -9,39 +10,39 @@ import SMEProfileSetup from './pages/sme/SMEProfileSetup'
 import SMEDashboard from './pages/sme/SMEDashboard'
 import StudentDashboard from './pages/student/StudentDashboard'
 import PostJobPage from './pages/sme/PostJobPage'
+import ErrorPage from './components/ErrorPage'
 
 function App() {
-  const { loading } = useAuth()
+  const { loading, user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [isRestoring, setIsRestoring] = useState(true)
 
-  console.log('App loading state:', loading)
+  // Save current route when it changes
+  useEffect(() => {
+    if (user && !loading && location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/signup' && location.pathname !== '/select-role') {
+      sessionStorage.setItem('lastRoute', location.pathname)
+    }
+  }, [location.pathname, user, loading])
+
+  // Restore last route on refresh - wait for auth to complete
+  useEffect(() => {
+    if (!loading && isRestoring) {
+      const lastRoute = sessionStorage.getItem('lastRoute')
+      
+      console.log('Restoring route:', { lastRoute, currentPath: location.pathname, user: !!user })
+      
+      // Only restore if we have a saved route and we're on the root or login page
+      if (lastRoute && lastRoute !== '/' && user && (location.pathname === '/' || location.pathname === '/login')) {
+        sessionStorage.removeItem('lastRoute')
+        navigate(lastRoute, { replace: true })
+      }
+      setIsRestoring(false)
+    }
+  }, [loading, user, location.pathname, navigate, isRestoring])
 
   if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '1rem',
-        background: '#f5f7fa'
-      }}>
-        <div style={{ 
-          width: '40px', 
-          height: '40px', 
-          border: '3px solid #1a9c6e',
-          borderTopColor: 'transparent',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }} />
-        <p>Loading...</p>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    )
+    return null
   }
 
   return (
@@ -55,6 +56,7 @@ function App() {
       <Route path="/dashboard/sme" element={<SMEDashboard />} />
       <Route path="/dashboard/student" element={<StudentDashboard />} />
       <Route path="/post-job" element={<PostJobPage />} />
+      <Route path="*" element={<ErrorPage title="Page Not Found" message="The page you're looking for doesn't exist or has been moved." />} />
     </Routes>
   )
 }

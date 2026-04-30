@@ -1,14 +1,23 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { 
-  FiZap, FiUser, FiBriefcase, FiPhone, FiMail, 
-  FiCamera, FiUpload, FiArrowRight, FiCheckCircle, FiUsers 
+import { useAuth } from "../../context/AuthContext";
+import {
+  FiUser,
+  FiBriefcase,
+  FiPhone,
+  FiMail,
+  FiCamera,
+  FiUpload,
+  FiArrowRight,
+  FiCheckCircle,
+  FiUsers,
 } from "react-icons/fi";
 import "../../styles/auth.css";
 
 const SMEProfileSetup = () => {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -26,7 +35,9 @@ const SMEProfileSetup = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || "");
         setUserName(user.user_metadata?.full_name || "");
@@ -35,7 +46,9 @@ const SMEProfileSetup = () => {
     getUser();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError("");
   };
@@ -58,24 +71,24 @@ const SMEProfileSetup = () => {
 
   const uploadAvatar = async (userId: string): Promise<string | null> => {
     if (!avatarFile) return null;
-    
-    const fileExt = avatarFile.name.split('.').pop();
-    const fileName = `${userId}/avatar.${fileExt}`;
+
+    const fileExt = avatarFile.name.split(".").pop();
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
-    
+
     const { error: uploadError } = await supabase.storage
-      .from('avatars')
+      .from("avatars")
       .upload(filePath, avatarFile, { upsert: true });
-    
+
     if (uploadError) {
       console.error("Upload error:", uploadError);
       return null;
     }
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-    
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
     return publicUrl;
   };
 
@@ -96,57 +109,65 @@ const SMEProfileSetup = () => {
       return;
     }
 
-    if (!avatarFile) {
-      setError("Please upload a profile photo");
-      setLoading(false);
-      return;
-    }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    
     if (user) {
-      const avatarUrl = await uploadAvatar(user.id);
-      
-      if (!avatarUrl) {
-        setError("Failed to upload photo. Please try again.");
-        setLoading(false);
-        return;
+      let avatarUrl = null;
+
+      // Only upload avatar if a file is selected
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar(user.id);
+        if (!avatarUrl) {
+          setError("Failed to upload photo. Please try again.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      const updateData: any = {
+        full_name: formData.company_name,
+        phone: formData.phone,
+        address: formData.address,
+        bio: formData.bio,
+        is_verified: true,
+        role: "sme",
+      };
+
+      if (avatarUrl) {
+        updateData.avatar_url = avatarUrl;
       }
 
       const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.company_name,
-          phone: formData.phone,
-          address: formData.address,
-          bio: formData.bio,
-          avatar_url: avatarUrl,
-          is_verified: true
-        })
-        .eq('id', user.id);
+        .from("profiles")
+        .update(updateData)
+        .eq("id", user.id);
 
       if (updateError) {
         setError(updateError.message);
       } else {
+        // Refresh the profile in auth context
+        await refreshProfile();
         setSuccess(true);
         setTimeout(() => {
           navigate("/dashboard/sme");
         }, 2000);
       }
     }
-    
+
     setLoading(false);
   };
 
   if (success) {
     return (
       <div className="role-page">
-        <div className="role-header">
+        {/* <div className="role-header">
           <div className="auth-logo" onClick={() => navigate("/")}>
             <FiZap className="logo-icon" />
             <span>CampusFreelance</span>
           </div>
-        </div>
+        </div> */}
         <div className="role-content">
           <div className="setup-box">
             <div className="verify-icon">
@@ -154,7 +175,9 @@ const SMEProfileSetup = () => {
             </div>
             <h1>Profile Complete!</h1>
             <p>Your business profile has been created.</p>
-            <p style={{ color: "#1a9c6e", marginTop: "1rem" }}>Redirecting to dashboard...</p>
+            <p style={{ color: "#1a9c6e", marginTop: "1rem" }}>
+              Redirecting to dashboard...
+            </p>
           </div>
         </div>
       </div>
@@ -163,13 +186,6 @@ const SMEProfileSetup = () => {
 
   return (
     <div className="role-page">
-      {/* <div className="role-header">
-        <div className="auth-logo" onClick={() => navigate("/")}>
-          <FiZap className="logo-icon" />
-          <span>CampusFreelance</span>
-        </div>
-      </div> */}
-
       <div className="role-content">
         <div className="setup-box">
           <div className="verify-icon">
@@ -183,9 +199,11 @@ const SMEProfileSetup = () => {
           <form onSubmit={handleSubmit}>
             {/* Profile Photo */}
             <div className="form-group">
-              <label><FiCamera /> Profile Photo *</label>
+              <label>
+                <FiCamera /> Profile Photo
+              </label>
               <div className="photo-upload-wrap">
-                <div 
+                <div
                   className="photo-upload"
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -195,11 +213,14 @@ const SMEProfileSetup = () => {
                     accept="image/*"
                     onChange={handleAvatarUpload}
                     style={{ display: "none" }}
-                    required
                   />
                   {avatarPreview ? (
                     <>
-                      <img src={avatarPreview} alt="Profile preview" className="photo-preview" />
+                      <img
+                        src={avatarPreview}
+                        alt="Profile preview"
+                        className="photo-preview"
+                      />
                       <div className="photo-camera-btn">
                         <FiCamera />
                       </div>
@@ -207,7 +228,7 @@ const SMEProfileSetup = () => {
                   ) : (
                     <div className="photo-placeholder">
                       <FiUpload className="photo-placeholder-icon" />
-                      <p>Upload</p>
+                      <p>Upload Photo</p>
                     </div>
                   )}
                 </div>
@@ -217,7 +238,9 @@ const SMEProfileSetup = () => {
 
             {/* Read-only fields */}
             <div className="form-group">
-              <label><FiUser /> Full Name</label>
+              <label>
+                <FiUser /> Full Name
+              </label>
               <div className="input-wrap">
                 <FiUser className="input-icon" />
                 <input type="text" value={userName} disabled />
@@ -225,7 +248,9 @@ const SMEProfileSetup = () => {
             </div>
 
             <div className="form-group">
-              <label><FiMail /> Email Address</label>
+              <label>
+                <FiMail /> Email Address
+              </label>
               <div className="input-wrap">
                 <FiMail className="input-icon" />
                 <input type="email" value={userEmail} disabled />
@@ -233,7 +258,9 @@ const SMEProfileSetup = () => {
             </div>
 
             <div className="form-group">
-              <label><FiBriefcase /> Company / Business Name *</label>
+              <label>
+                <FiBriefcase /> Company / Business Name *
+              </label>
               <div className="input-wrap">
                 <FiBriefcase className="input-icon" />
                 <input
@@ -248,7 +275,9 @@ const SMEProfileSetup = () => {
             </div>
 
             <div className="form-group">
-              <label><FiPhone /> Phone Number *</label>
+              <label>
+                <FiPhone /> Phone Number *
+              </label>
               <div className="input-wrap">
                 <FiPhone className="input-icon" />
                 <input
@@ -262,22 +291,10 @@ const SMEProfileSetup = () => {
               </div>
             </div>
 
-            {/* <div className="form-group">
-              <label><FiMapPin /> Business Address</label>
-              <div className="input-wrap">
-                <FiMapPin className="input-icon" />
-                <input
-                  type="text"
-                  name="address"
-                  placeholder="Enter your business address"
-                  value={formData.address}
-                  onChange={handleChange}
-                />
-              </div>
-            </div> */}
-
             <div className="form-group">
-              <label><FiUser /> About Your Business</label>
+              <label>
+                <FiUser /> About Your Business
+              </label>
               <textarea
                 name="bio"
                 rows={4}
