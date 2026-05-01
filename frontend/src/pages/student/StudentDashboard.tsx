@@ -5,6 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import ChatPage from "../../components/Chat/ChatPage";
 import NotificationsPopup from "../../components/NotificationsPopup";
 import { useRoutePersistence } from "../../hooks/useRoutePersistence";
+import { useToast, ToastContainer } from '../../components/Toast';
+import { ConfirmationModal } from '../../components/ConfirmationModal';
 import {
   FiZap,
   FiHome,
@@ -54,6 +56,9 @@ const StudentDashboard: React.FC = () => {
   const [jobKeyword, setJobKeyword] = useState<string>("");
   const [categories, setCategories] = useState<any[]>([]);
   const categoriesScrollRef = useRef<HTMLDivElement>(null);
+  const { toasts, addToast, removeToast } = useToast();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  // const [pendingBid, setPendingBid] = useState<any>(null);
 
   useRoutePersistence();
 
@@ -72,7 +77,6 @@ const StudentDashboard: React.FC = () => {
     "AI & Automation": "#06b6d4",
   };
 
-  // Handle page change with persistence
   const handlePageChange = (page: string) => {
     sessionStorage.setItem('student_activePage', page);
     setActivePage(page);
@@ -256,11 +260,17 @@ const StudentDashboard: React.FC = () => {
 
   const handleBid = async () => {
     setBidError("");
-    if (!bidAmount) { setBidError("Please enter your bid amount"); return; }
-    if (!bidProposal) { setBidError("Please write a proposal"); return; }
+    if (!bidAmount) { 
+      addToast("Please enter your bid amount", 'error');
+      return; 
+    }
+    if (!bidProposal) { 
+      addToast("Please write a proposal", 'error');
+      return; 
+    }
     const bidAmountNum = parseInt(bidAmount);
     if (bidAmountNum > selectedJob.budget) {
-      setBidError(`Your bid cannot exceed the job budget of ${formatBudget(selectedJob.budget)}`);
+      addToast(`Your bid cannot exceed the job budget of ${formatBudget(selectedJob.budget)}`, 'error');
       return;
     }
     setSubmitting(true);
@@ -272,6 +282,7 @@ const StudentDashboard: React.FC = () => {
       status: "pending",
     }]);
     if (!error) {
+      addToast(`Bid placed successfully for "${selectedJob.title}"!`, 'success');
       setSuccessBidData({ jobTitle: selectedJob.title, amount: bidAmountNum, clientName: selectedJob.client?.full_name || "the client" });
       setShowBidModal(false);
       setBidAmount("");
@@ -281,7 +292,7 @@ const StudentDashboard: React.FC = () => {
       await fetchJobs();
       setTimeout(() => setShowSuccessModal(false), 3000);
     } else {
-      setBidError(error.message);
+      addToast(error.message, 'error');
     }
     setSubmitting(false);
   };
@@ -294,12 +305,18 @@ const StudentDashboard: React.FC = () => {
     setBidError("");
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowConfirmModal(true);
+  };
+
+  const confirmLogout = async () => {
     sessionStorage.removeItem('student_activePage');
     sessionStorage.removeItem('lastRoute');
     sessionStorage.clear();
     await supabase.auth.signOut();
+    addToast(`Logged out successfully.`, 'info');
     navigate("/login");
+    setShowConfirmModal(false);
   };
 
   const formatBudget = (budget: number) => {
@@ -493,7 +510,6 @@ const StudentDashboard: React.FC = () => {
         </div>
       </aside>
 
-      {/* Mobile Drawer */}
       <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
       <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
         <div className="drawer-header-right">
@@ -564,7 +580,7 @@ const StudentDashboard: React.FC = () => {
         ))}</div>
       )}
 
-      {/* Modals remain the same */}
+      {/* Bid Modal */}
       {showBidModal && selectedJob && (
         <div className="modal-overlay">
           <div className="modal-container">
@@ -590,6 +606,21 @@ const StudentDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title="Logout?"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        type="warning"
+        onConfirm={confirmLogout}
+        onCancel={() => setShowConfirmModal(false)}
+      />
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };

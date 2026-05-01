@@ -15,14 +15,12 @@ const LoginPage = () => {
     password: "",
   });
 
-  // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && profile) {
-      console.log("User logged in, role:", profile.role);
       if (profile.role === "sme") {
-        navigate("/dashboard/sme");
+        navigate("/dashboard/sme", { replace: true });
       } else {
-        navigate("/dashboard/student");
+        navigate("/dashboard/student", { replace: true });
       }
     }
   }, [authLoading, profile, navigate]);
@@ -33,18 +31,45 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    e.preventDefault()
+    setLoading(true)
+    setError("")
 
-    const { error: signInError } = await signIn(form.email, form.password);
+    // Timeout after 10 seconds
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+      setError("Request timed out. Please check your internet connection and try again.")
+    }, 10000)
 
-    if (signInError) {
-      setError(signInError.message);
-      setLoading(false);
+    try {
+      const { error: signInError } = await signIn(form.email, form.password)
+      clearTimeout(timeoutId)
+
+      if (signInError) {
+        setLoading(false)
+
+        // Friendly error messages
+        if (signInError.message?.includes('Invalid login credentials')) {
+          setError("Incorrect email or password. Please try again.")
+        } else if (signInError.message?.includes('Email not confirmed')) {
+          setError("Please verify your email before logging in. Check your inbox.")
+        } else if (signInError.message?.includes('network') || signInError.message?.includes('fetch')) {
+          setError("Network error. Please check your internet connection.")
+        } else {
+          setError(signInError.message || "Login failed. Please try again.")
+        }
+      }
+      // On success — useEffect handles redirect
+    } catch (err: any) {
+      clearTimeout(timeoutId)
+      setLoading(false)
+      if (err?.message?.includes('fetch') || err?.message?.includes('network')) {
+        setError("Network error. Please check your internet connection.")
+      } else {
+        setError("Something went wrong. Please try again.")
+      }
     }
-    // On success, the useEffect will redirect
-  };
+  }
 
   return (
     <div className="auth-page">
@@ -87,7 +112,11 @@ const LoginPage = () => {
           <h1>Log in to your account</h1>
           <p className="auth-sub">Good to have you back!</p>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && (
+            <div className="auth-error" style={{ marginBottom: '1rem' }}>
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
@@ -101,6 +130,7 @@ const LoginPage = () => {
                   value={form.email}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -116,6 +146,7 @@ const LoginPage = () => {
                   value={form.password}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
                 <button
                   type="button"
@@ -131,8 +162,28 @@ const LoginPage = () => {
               <Link to="/forgot-password">Forgot password?</Link>
             </div>
 
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? "Logging in..." : "Log in"}
+            <button
+              type="submit"
+              className="auth-btn"
+              disabled={loading}
+              style={{ position: 'relative', overflow: 'hidden' }}
+            >
+              {loading ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <span style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid rgba(255,255,255,0.4)',
+                    borderTopColor: 'white',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                    display: 'inline-block',
+                    flexShrink: 0,
+                  }} />
+                  Logging in...
+                </span>
+              ) : "Log in"}
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </button>
           </form>
 

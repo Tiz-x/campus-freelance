@@ -60,12 +60,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     isMountedRef.current = true
 
-    // Add a safety timeout — if auth takes more than 5 seconds, stop loading
     const timeout = setTimeout(() => {
       if (isMountedRef.current) {
         setLoading(false)
       }
-    }, 2000)
+    }, 3000)
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!isMountedRef.current) return
+
+        if (session?.user) {
+          setUser(session.user)
+          fetchProfile(session.user.id).finally(() => {
+            if (isMountedRef.current) {
+              setLoading(false)
+              clearTimeout(timeout)
+            }
+          })
+        } else {
+          setLoading(false)
+          clearTimeout(timeout)
+        }
+      } catch (err) {
+        console.error('Auth init error:', err)
+        if (isMountedRef.current) {
+          setLoading(false)
+          clearTimeout(timeout)
+        }
+      }
+    }
+
+    initAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -73,15 +101,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (session?.user) {
           setUser(session.user)
-          await fetchProfile(session.user.id)
+          fetchProfile(session.user.id)
         } else {
           setUser(null)
           setProfile(null)
-        }
-
-        if (isMountedRef.current) {
-          setLoading(false)
-          clearTimeout(timeout)
         }
       }
     )
@@ -94,17 +117,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (data?.user) {
-      setUser(data.user)
-      await fetchProfile(data.user.id)
+      if (error) return { error }
+
+      if (data?.user) {
+        setUser(data.user)
+        fetchProfile(data.user.id)
+      }
+
+      return { error: null }
+    } catch (err: any) {
+      return { error: { message: err.message || 'Network error. Please try again.' } }
     }
-
-    return { error }
   }
 
   const signOut = async () => {

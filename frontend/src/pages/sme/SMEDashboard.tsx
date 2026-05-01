@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
+import { useToast, ToastContainer } from '../../components/Toast';
+import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useRoutePersistence } from "../../hooks/useRoutePersistence";
 import ChatPage from "../../components/Chat/ChatPage";
 import NotificationsPopup from "../../components/NotificationsPopup";
@@ -55,6 +57,9 @@ const SMEDashboard = () => {
   const [userEmail, setUserEmail] = useState("");
   const [students, setStudents] = useState<any[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
+  const { toasts, addToast, removeToast } = useToast();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ type: string; data?: any } | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
@@ -63,7 +68,6 @@ const SMEDashboard = () => {
 
   useRoutePersistence();
 
-  // Handle page change with persistence
   const handlePageChange = (page: string) => {
     sessionStorage.setItem('sme_activePage', page);
     setActivePage(page);
@@ -269,13 +273,14 @@ const SMEDashboard = () => {
         related_id: jobId,
         is_read: false,
       });
-      alert("Bid accepted successfully!");
+      
+      addToast(`Bid from student accepted successfully!`, 'success');
       await fetchBids(userId);
       await fetchJobs(userId);
       setShowBidsModal(false);
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred. Please try again.");
+      addToast(`Failed to accept bid. Please try again.`, 'error');
     } finally {
       setProcessingBid(false);
     }
@@ -285,18 +290,25 @@ const SMEDashboard = () => {
     setProcessingBid(true);
     try {
       await supabase.from("bids").update({ status: "rejected" }).eq("id", bidId);
-      alert("Bid rejected successfully.");
+      addToast(`Bid has been rejected.`, 'info');
       await fetchBids(userId);
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred. Please try again.");
+      addToast(`Failed to reject bid. Please try again.`, 'error');
     } finally {
       setProcessingBid(false);
     }
   };
 
-  const completeJob = async (jobId: string, studentId: string, amount: number, jobTitle: string) => {
-    if (!confirm(`Confirm job completion for "${jobTitle}"? This will release ${formatBudget(amount)} to the student.`)) return;
+  const completeJob = (jobId: string, studentId: string, amount: number, jobTitle: string) => {
+    setPendingAction({ type: 'complete_job', data: { jobId, studentId, amount, jobTitle } });
+    setShowConfirmModal(true);
+  };
+
+  const confirmCompleteJob = async () => {
+    if (!pendingAction?.data) return;
+    const { jobId, studentId, amount, jobTitle } = pendingAction.data;
+    
     try {
       await supabase.from("jobs").update({ status: "completed" }).eq("id", jobId);
       await supabase.from("transactions").update({ status: "released" }).eq("job_id", jobId);
@@ -308,12 +320,16 @@ const SMEDashboard = () => {
         related_id: jobId,
         is_read: false,
       });
-      alert(`Job completed! ${formatBudget(amount)} has been released to the student.`);
+      
+      addToast(`Job "${jobTitle}" completed! ${formatBudget(amount)} released to student.`, 'success');
       await fetchJobs(userId);
       await fetchTransactions();
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred. Please try again.");
+      addToast(`Failed to complete job. Please try again.`, 'error');
+    } finally {
+      setShowConfirmModal(false);
+      setPendingAction(null);
     }
   };
 
@@ -324,7 +340,7 @@ const SMEDashboard = () => {
 
   const goToChat = (studentId: string, studentName: string) => {
     if (!studentId) {
-      alert("Student information not available");
+      addToast("Student information not available", 'error');
       return;
     }
     sessionStorage.setItem("selectedChatUser", JSON.stringify({ id: studentId, full_name: studentName || "Student" }));
@@ -332,12 +348,20 @@ const SMEDashboard = () => {
     fetchUnreadMessageCount();
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setPendingAction({ type: 'logout', data: null });
+    setShowConfirmModal(true);
+  };
+
+  const confirmLogout = async () => {
     sessionStorage.removeItem('sme_activePage');
     sessionStorage.removeItem('lastRoute');
     sessionStorage.clear();
     await supabase.auth.signOut();
+    addToast(`Logged out successfully.`, 'info');
     navigate("/login");
+    setShowConfirmModal(false);
+    setPendingAction(null);
   };
 
   const formatBudget = (budget: number) => {
@@ -455,7 +479,7 @@ const SMEDashboard = () => {
                     <div className="job-day-footer">
                       <div className="student-status"><span className="verified-badge">{student.is_verified ? "✓ Verified" : "Student"}</span></div>
                       <div className="student-actions">
-                        <button className="apply-btn" onClick={(e) => { e.stopPropagation(); const openJob = jobs.find(j => j.status === "open"); if (openJob) alert(`Invite ${student.full_name} to: ${openJob.title}`); else alert("Post a job first to invite this student"); }}>Hire</button>
+                        <button className="apply-btn" onClick={(e) => { e.stopPropagation(); const openJob = jobs.find(j => j.status === "open"); if (openJob) addToast(`Invite ${student.full_name} to: ${openJob.title}`, 'info'); else addToast("Post a job first to invite this student", 'warning'); }}>Hire</button>
                         <button className="btn-outline-small" onClick={(e) => { e.stopPropagation(); goToChat(student.id, student.full_name); }}><FiMessageCircle /> Message</button>
                       </div>
                     </div>
@@ -695,7 +719,7 @@ const SMEDashboard = () => {
                   </div>
                   {bid.status === "pending" && selectedJob.status === "open" && (<div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem", paddingTop: "0.5rem", borderTop: "1px solid #ddd" }}><button onClick={() => handleAcceptBid(bid.id, selectedJob.id, bid.student_id, selectedJob.title)} disabled={processingBid} className="accept-btn"><FiCheck /> Accept Bid</button><button onClick={() => handleRejectBid(bid.id)} disabled={processingBid} className="reject-btn"><FiXCircle /> Reject</button></div>)}
                   {bid.status === "accepted" && (<div style={{ marginTop: "1rem", paddingTop: "0.5rem", borderTop: "1px solid #ddd" }}><button onClick={() => goToChat(bid.student_id, bid.profiles?.full_name)} className="btn-primary btn-small" style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}><FiMessageCircle /> Message Student</button>
-                  <PaystackPayment amount={bid.amount} email={userEmail} jobId={selectedJob.id} jobTitle={selectedJob.title} studentId={bid.student_id} onSuccess={() => { alert("Payment successful! Funds are held in escrow until job completion."); fetchBids(userId); fetchJobs(userId); fetchTransactions(); }} onClose={() => {}} /></div>)}
+                  <PaystackPayment amount={bid.amount} email={userEmail} jobId={selectedJob.id} jobTitle={selectedJob.title} studentId={bid.student_id} onSuccess={() => { addToast("Payment successful! Funds are held in escrow until job completion.", 'success'); fetchBids(userId); fetchJobs(userId); fetchTransactions(); }} onClose={() => {}} /></div>)}
                 </div>
               ))
             )}
@@ -703,7 +727,29 @@ const SMEDashboard = () => {
         </div></div>
       )}
 
-      {showStudentModal && selectedStudent && <StudentProfileModal student={selectedStudent} onClose={() => setShowStudentModal(false)} onMessage={(id, name) => goToChat(id, name)} onHire={(student) => { const openJob = jobs.find((j) => j.status === "open"); if (openJob) alert(`Invite ${student.full_name} to: ${openJob.title}`); else alert("Post a job first to invite this student"); }} />}
+      {showStudentModal && selectedStudent && <StudentProfileModal student={selectedStudent} onClose={() => setShowStudentModal(false)} onMessage={(id, name) => goToChat(id, name)} onHire={(student) => { const openJob = jobs.find((j) => j.status === "open"); if (openJob) addToast(`Invite ${student.full_name} to: ${openJob.title}`, 'info'); else addToast("Post a job first to invite this student", 'warning'); }} />}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title={pendingAction?.type === 'logout' ? 'Logout?' : 'Complete Job?'}
+        message={
+          pendingAction?.type === 'logout' 
+            ? 'Are you sure you want to logout?' 
+            : `Are you sure you want to complete "${pendingAction?.data?.jobTitle}"? This will release ${formatBudget(pendingAction?.data?.amount)} to the student.`
+        }
+        confirmText={pendingAction?.type === 'logout' ? 'Logout' : 'Complete & Release'}
+        cancelText="Cancel"
+        type={pendingAction?.type === 'logout' ? 'warning' : 'danger'}
+        onConfirm={pendingAction?.type === 'logout' ? confirmLogout : confirmCompleteJob}
+        onCancel={() => {
+          setShowConfirmModal(false);
+          setPendingAction(null);
+        }}
+      />
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };

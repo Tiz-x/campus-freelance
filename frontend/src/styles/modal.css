@@ -1,0 +1,169 @@
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Confirmation Modal */
+.modal-confirmation {
+  background: white;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 420px;
+  padding: 28px 24px 24px;
+  text-align: center;
+  position: relative;
+  animation: slideUp 0.3s ease;
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-confirmation-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+}
+
+.modal-confirmation-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.modal-confirmation-message {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.modal-confirmation-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.modal-btn-cancel,
+.modal-btn-confirm {
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.modal-btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.modal-btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.modal-btn-confirm {
+  background: #1a9c6e;
+  color: white;
+}
+
+.modal-btn-confirm:hover {
+  background: #158f5e;
+  transform: translateY(-1px);
+}
+
+.modal-btn-danger {
+  background: #ef4444;
+}
+
+.modal-btn-danger:hover {
+  background: #dc2626;
+}
+
+.modal-btn-warning {
+  background: #f59e0b;
+}
+
+.modal-btn-warning:hover {
+  background: #d97706;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: #475569;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .modal-confirmation {
+    padding: 24px 20px 20px;
+    width: 95%;
+  }
+  
+  .modal-confirmation-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
+  }
+  
+  .modal-confirmation-title {
+    font-size: 1.2rem;
+  }
+  
+  .modal-confirmation-buttons {
+    gap: 10px;
+  }
+  
+  .modal-btn-cancel,
+  .modal-btn-confirm {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+}
