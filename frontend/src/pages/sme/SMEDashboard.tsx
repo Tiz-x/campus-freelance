@@ -38,7 +38,9 @@ const SMEDashboard = () => {
   const { user, profile } = useAuth();
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
-  const [activePage, setActivePage] = useState("home");
+  const [activePage, setActivePage] = useState(() => {
+    return sessionStorage.getItem('sme_activePage') || 'home';
+  });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -55,12 +57,17 @@ const SMEDashboard = () => {
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
-  // const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [companyAvatar, setCompanyAvatar] = useState<string | null>(null);
 
   useRoutePersistence();
+
+  // Handle page change with persistence
+  const handlePageChange = (page: string) => {
+    sessionStorage.setItem('sme_activePage', page);
+    setActivePage(page);
+  };
 
   useEffect(() => {
     if (activePage === "students" && students.length === 0 && !studentsLoading) {
@@ -321,12 +328,13 @@ const SMEDashboard = () => {
       return;
     }
     sessionStorage.setItem("selectedChatUser", JSON.stringify({ id: studentId, full_name: studentName || "Student" }));
-    setActivePage("messages");
+    handlePageChange("messages");
     fetchUnreadMessageCount();
   };
 
   const handleLogout = async () => {
-    sessionStorage.removeItem("lastRoute");
+    sessionStorage.removeItem('sme_activePage');
+    sessionStorage.removeItem('lastRoute');
     sessionStorage.clear();
     await supabase.auth.signOut();
     navigate("/login");
@@ -529,7 +537,7 @@ const SMEDashboard = () => {
                 <div className="welcome-message">Good morning, {userName}</div>
                 <div className="hero-search-kkw">
                   <div className="search-field-kkw"><FiSearch /><input type="text" placeholder="Search for students..." /></div>
-                  <button className="search-btn-kkw" onClick={() => setActivePage("students")}>Search</button>
+                  <button className="search-btn-kkw" onClick={() => handlePageChange("students")}>Search</button>
                 </div>
               </div>
             </div>
@@ -542,7 +550,7 @@ const SMEDashboard = () => {
               </div>
             </div>
             <div className="categories-section-jw">
-              <div className="section-header-jw"><div><h2>Recent Bids</h2><p>Students who have bid on your jobs</p></div><button className="view-all-jw" onClick={() => setActivePage("jobs")}>View all <FiArrowRight /></button></div>
+              <div className="section-header-jw"><div><h2>Recent Bids</h2><p>Students who have bid on your jobs</p></div><button className="view-all-jw" onClick={() => handlePageChange("jobs")}>View all <FiArrowRight /></button></div>
               {bids.length === 0 ? (<div className="empty-state small"><p>No bids yet. When students bid on your jobs, they'll appear here.</p></div>) : (
                 <div className="jobs-day-grid">
                   {bids.slice(0, 3).map((bid) => (
@@ -573,90 +581,90 @@ const SMEDashboard = () => {
   return (
     <div className="dashboard">
       <aside className="sidebar">
-  <nav className="sidebar-nav">
-    {navItems.map((item) => (
-      <div
-        key={item.key}
-        className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-        onClick={() => setActivePage(item.key)}
-      >
-        {item.icon}
-        <span>{item.label}</span>
-        {item.badge && parseInt(item.badge) > 0 && (
-          <span className="nav-badge">{item.badge}</span>
-        )}
-      </div>
-    ))}
-  </nav>
-  <div className="sidebar-bottom">
-    <div className="sidebar-profile">
-      <div className="sidebar-avatar">
-        {companyAvatar ? (
-          <img src={companyAvatar} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-        ) : (
-          userName.charAt(0).toUpperCase()
-        )}
-      </div>
-      <div>
-        <p className="sidebar-name">{userName}</p>
-        <p className="sidebar-role">SME Account</p>
-      </div>
-    </div>
-    <div className="nav-item logout-item" onClick={handleLogout}>
-      <FiLogOut /> <span>Logout</span>
-    </div>
-  </div>
-</aside>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <div
+              key={item.key}
+              className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
+              onClick={() => handlePageChange(item.key)}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge && parseInt(item.badge) > 0 && (
+                <span className="nav-badge">{item.badge}</span>
+              )}
+            </div>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="sidebar-profile">
+            <div className="sidebar-avatar">
+              {companyAvatar ? (
+                <img src={companyAvatar} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                userName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <p className="sidebar-name">{userName}</p>
+              <p className="sidebar-role">SME Account</p>
+            </div>
+          </div>
+          <div className="nav-item logout-item" onClick={handleLogout}>
+            <FiLogOut /> <span>Logout</span>
+          </div>
+        </div>
+      </aside>
 
-{/* Mobile Drawer */}
-<div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
-<div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
-  <div className="drawer-header-right">
-    <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn-right"><FiX /></button>
-  </div>
-  <nav className="drawer-nav">
-    {navItems.map((item) => (
-      <div
-        key={item.key}
-        className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-        onClick={() => { setActivePage(item.key); setDrawerOpen(false); }}
-      >
-        {item.icon}
-        <span>{item.label}</span>
-        {item.badge && parseInt(item.badge) > 0 && (
-          <span className="nav-badge">{item.badge}</span>
-        )}
+      {/* Mobile Drawer */}
+      <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
+      <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
+        <div className="drawer-header-right">
+          <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn-right"><FiX /></button>
+        </div>
+        <nav className="drawer-nav">
+          {navItems.map((item) => (
+            <div
+              key={item.key}
+              className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
+              onClick={() => { handlePageChange(item.key); setDrawerOpen(false); }}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge && parseInt(item.badge) > 0 && (
+                <span className="nav-badge">{item.badge}</span>
+              )}
+            </div>
+          ))}
+        </nav>
+        <div className="drawer-bottom">
+          <div className="drawer-profile">
+            <div className="drawer-avatar">
+              {companyAvatar ? (
+                <img src={companyAvatar} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                userName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <p className="drawer-name">{userName}</p>
+              <p className="drawer-role">SME Account</p>
+            </div>
+          </div>
+          <div className="drawer-logout" onClick={handleLogout}>
+            <FiLogOut /> <span>Logout</span>
+          </div>
+        </div>
       </div>
-    ))}
-  </nav>
-  <div className="drawer-bottom">
-    <div className="drawer-profile">
-      <div className="drawer-avatar">
-        {companyAvatar ? (
-          <img src={companyAvatar} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-        ) : (
-          userName.charAt(0).toUpperCase()
-        )}
-      </div>
-      <div>
-        <p className="drawer-name">{userName}</p>
-        <p className="drawer-role">SME Account</p>
-      </div>
-    </div>
-    <div className="drawer-logout" onClick={handleLogout}>
-      <FiLogOut /> <span>Logout</span>
-    </div>
-  </div>
-</div>
 
       <div className="main-content-area">
         <div className="topbar-sticky">
           <div className="topbar">
             <div className="topbar-left">{isMobile && <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)}><FiMenu /></button>}</div>
-            <div className="topbar-logo-center"><div className="logo-wrapper" onClick={() => setActivePage("home")}><FiZap className="logo-icon-topbar" /><span className="logo-text-topbar">CampusFreelance</span></div></div>
+            <div className="topbar-logo-center"><div className="logo-wrapper" onClick={() => handlePageChange("home")}><FiZap className="logo-icon-topbar" /><span className="logo-text-topbar">CampusFreelance</span></div></div>
             <div className="topbar-actions">
               <div className="notification-wrapper"><button className="topbar-notif" onClick={() => setShowNotifications(!showNotifications)}><FiBell />{unreadCount > 0 && <span className="notification-count">{unreadCount > 9 ? "9+" : unreadCount}</span>}</button>{showNotifications && <NotificationsPopup userId={userId} onClose={() => setShowNotifications(false)} />}</div>
-              <div className="profile-avatar-topbar" onClick={() => setActivePage("profile")}><div className="student-topbar-avatar">
+              <div className="profile-avatar-topbar" onClick={() => handlePageChange("profile")}><div className="student-topbar-avatar">
                 {companyAvatar ? (
                   <img src={companyAvatar} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
                 ) : (
@@ -669,8 +677,9 @@ const SMEDashboard = () => {
         <div className="scrollable-content">{renderContent()}</div>
       </div>
 
-      {isMobile && (<div className="bottom-nav">{navItems.slice(0, 4).map((item) => (<button key={item.key} className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`} onClick={() => setActivePage(item.key)}>{item.icon}<span>{item.label}</span>{item.badge && parseInt(item.badge) > 0 && <span className="bottom-nav-badge">{item.badge}</span>}</button>))}</div>)}
+      {isMobile && (<div className="bottom-nav">{navItems.slice(0, 4).map((item) => (<button key={item.key} className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`} onClick={() => handlePageChange(item.key)}>{item.icon}<span>{item.label}</span>{item.badge && parseInt(item.badge) > 0 && <span className="bottom-nav-badge">{item.badge}</span>}</button>))}</div>)}
 
+      {/* Bids Modal */}
       {showBidsModal && selectedJob && (
         <div className="modal-overlay"><div className="modal-container"><div className="modal-header"><h2>Bids for: {selectedJob.title}</h2><button onClick={() => setShowBidsModal(false)} className="modal-close"><FiX /></button></div>
           <div className="modal-body">

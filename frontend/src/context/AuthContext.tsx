@@ -39,56 +39,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data: profileData } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
-      
-      if (profileData && isMountedRef.current) {
-        setProfile(profileData as ProfileType)
+
+      if (data && isMountedRef.current) {
+        setProfile(data as ProfileType)
       }
-      return profileData
     } catch (err) {
-      console.log('Profile fetch error:', err)
-      return null
+      console.error('Profile fetch error:', err)
     }
   }
 
   const refreshProfile = async () => {
-    if (user?.id) {
-      await fetchProfile(user.id)
-    }
+    if (user?.id) await fetchProfile(user.id)
   }
 
   useEffect(() => {
     isMountedRef.current = true
-    
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!isMountedRef.current) return
-        
-        if (session?.user) {
-          setUser(session.user)
-          await fetchProfile(session.user.id)
-        }
-      } catch (err) {
-        console.error('Auth error:', err)
-      } finally {
-        if (isMountedRef.current) {
-          setLoading(false)
-        }
-      }
-    }
 
-    checkAuth()
+    // Add a safety timeout — if auth takes more than 5 seconds, stop loading
+    const timeout = setTimeout(() => {
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
+    }, 2000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!isMountedRef.current) return
-        
+
         if (session?.user) {
           setUser(session.user)
           await fetchProfile(session.user.id)
@@ -96,12 +78,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null)
           setProfile(null)
         }
-        setLoading(false)
+
+        if (isMountedRef.current) {
+          setLoading(false)
+          clearTimeout(timeout)
+        }
       }
     )
 
     return () => {
       isMountedRef.current = false
+      clearTimeout(timeout)
       subscription.unsubscribe()
     }
   }, [])
@@ -111,19 +98,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
     })
-    
+
     if (data?.user) {
       setUser(data.user)
       await fetchProfile(data.user.id)
     }
-    
+
     return { error }
   }
 
   const signOut = async () => {
-    localStorage.removeItem('pendingSignup')
-    sessionStorage.removeItem('lastRoute')
     sessionStorage.clear()
+    localStorage.removeItem('pendingSignup')
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)

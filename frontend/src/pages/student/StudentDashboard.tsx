@@ -32,7 +32,9 @@ const StudentDashboard: React.FC = () => {
   const { profile } = useAuth();
   const [userName, setUserName] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const [activePage, setActivePage] = useState<string>("home");
+  const [activePage, setActivePage] = useState(() => {
+    return sessionStorage.getItem('student_activePage') || 'home';
+  });
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 768);
   const [jobs, setJobs] = useState<any[]>([]);
@@ -49,7 +51,6 @@ const StudentDashboard: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [chatUnreadCount, setChatUnreadCount] = useState<number>(0);
-  // const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [jobKeyword, setJobKeyword] = useState<string>("");
   const [categories, setCategories] = useState<any[]>([]);
   const categoriesScrollRef = useRef<HTMLDivElement>(null);
@@ -69,6 +70,12 @@ const StudentDashboard: React.FC = () => {
     "Digital Marketing": "#f97316",
     "Writing & Copywriting": "#10b981",
     "AI & Automation": "#06b6d4",
+  };
+
+  // Handle page change with persistence
+  const handlePageChange = (page: string) => {
+    sessionStorage.setItem('student_activePage', page);
+    setActivePage(page);
   };
 
   useEffect(() => {
@@ -288,7 +295,8 @@ const StudentDashboard: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    localStorage.removeItem('lastRoute');
+    sessionStorage.removeItem('student_activePage');
+    sessionStorage.removeItem('lastRoute');
     sessionStorage.clear();
     await supabase.auth.signOut();
     navigate("/login");
@@ -362,7 +370,7 @@ const StudentDashboard: React.FC = () => {
           <div className="bids-page">
             <div className="page-header"><h2>My Bids</h2><p>Track all your job proposals</p></div>
             {myBids.length === 0 ? (
-              <div className="empty-state"><p>No bids yet. Browse jobs to get started!</p><button className="btn-primary" onClick={() => setActivePage("jobs")}>Browse Jobs</button></div>
+              <div className="empty-state"><p>No bids yet. Browse jobs to get started!</p><button className="btn-primary" onClick={() => handlePageChange("jobs")}>Browse Jobs</button></div>
             ) : (
               <div className="jobs-day-grid">{myBids.map((bid: any) => <JobCard key={bid.id} job={bid.job} isBid={true} bidStatus={bid.status} showApplyButton={false} />)}</div>
             )}
@@ -403,8 +411,8 @@ const StudentDashboard: React.FC = () => {
                 <h1>Find your dream jobs in <span className="highlight">Akungba</span></h1>
                 <div className="welcome-message">Welcome back, {userName}</div>
                 <div className="hero-search-kkw">
-                  <div className="search-field-kkw"><FiSearch /><input type="text" placeholder="Job title or keywords" value={jobKeyword} onChange={(e) => setJobKeyword(e.target.value)} onKeyPress={(e) => e.key === "Enter" && setActivePage("jobs")} /></div>
-                  <button className="search-btn-kkw" onClick={() => setActivePage("jobs")}>Search</button>
+                  <div className="search-field-kkw"><FiSearch /><input type="text" placeholder="Job title or keywords" value={jobKeyword} onChange={(e) => setJobKeyword(e.target.value)} onKeyPress={(e) => e.key === "Enter" && handlePageChange("jobs")} /></div>
+                  <button className="search-btn-kkw" onClick={() => handlePageChange("jobs")}>Search</button>
                 </div>
               </div>
             </div>
@@ -421,11 +429,11 @@ const StudentDashboard: React.FC = () => {
             <div className="categories-section-jw">
               <div className="section-header-jw">
                 <div><h2>Browse by category</h2><p>Find the job that's perfect for you</p></div>
-                <button className="view-all-jw" onClick={() => setActivePage("jobs")}>View all <FiArrowRight /></button>
+                <button className="view-all-jw" onClick={() => handlePageChange("jobs")}>View all <FiArrowRight /></button>
               </div>
               <div className="categories-grid-jw" ref={categoriesScrollRef}>
                 {categories.map((cat, idx) => (
-                  <div key={idx} className="category-card-jw" onClick={() => setActivePage("jobs")}>
+                  <div key={idx} className="category-card-jw" onClick={() => handlePageChange("jobs")}>
                     <div className="category-icon-jw" style={{ backgroundColor: `${cat.color}15`, color: cat.color }}><FiBriefcase /></div>
                     <h3>{cat.name}</h3>
                     <p>{cat.count} jobs available</p>
@@ -436,7 +444,7 @@ const StudentDashboard: React.FC = () => {
             <div className="jobs-day-section">
               <div className="section-header-jw">
                 <div><h2>Recent Jobs</h2><p>Latest opportunities from clients</p></div>
-                <button className="view-all-jw" onClick={() => setActivePage("jobs")}>View all jobs <FiArrowRight /></button>
+                <button className="view-all-jw" onClick={() => handlePageChange("jobs")}>View all jobs <FiArrowRight /></button>
               </div>
               {loading ? <div className="loading-state">Loading jobs...</div> : jobs.length === 0 ? <div className="empty-state small"><p>No jobs available yet. Check back later!</p></div> : (
                 <div className="jobs-day-grid">{jobs.slice(0, 6).map((job) => <JobCard key={job.id} job={job} onClick={() => openBidModal(job)} />)}</div>
@@ -450,90 +458,90 @@ const StudentDashboard: React.FC = () => {
   return (
     <div className="dashboard">
       <aside className="sidebar">
-  <nav className="sidebar-nav">
-    {navItems.map((item) => (
-      <div
-        key={item.key}
-        className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-        onClick={() => setActivePage(item.key)}
-      >
-        {item.icon}
-        <span>{item.label}</span>
-        {item.badge && parseInt(item.badge) > 0 && (
-          <span className="nav-badge">{item.badge}</span>
-        )}
-      </div>
-    ))}
-  </nav>
-  <div className="sidebar-bottom">
-    <div className="sidebar-profile">
-      <div className="sidebar-avatar">
-        {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-        ) : (
-          userName.charAt(0).toUpperCase()
-        )}
-      </div>
-      <div>
-        <p className="sidebar-name">{userName}</p>
-        <p className="sidebar-role">Student</p>
-      </div>
-    </div>
-    <div className="nav-item logout-item" onClick={handleLogout}>
-      <FiLogOut /> <span>Logout</span>
-    </div>
-  </div>
-</aside>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <div
+              key={item.key}
+              className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
+              onClick={() => handlePageChange(item.key)}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge && parseInt(item.badge) > 0 && (
+                <span className="nav-badge">{item.badge}</span>
+              )}
+            </div>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="sidebar-profile">
+            <div className="sidebar-avatar">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                userName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <p className="sidebar-name">{userName}</p>
+              <p className="sidebar-role">Student</p>
+            </div>
+          </div>
+          <div className="nav-item logout-item" onClick={handleLogout}>
+            <FiLogOut /> <span>Logout</span>
+          </div>
+        </div>
+      </aside>
 
-{/* Mobile Drawer */}
-<div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
-<div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
-  <div className="drawer-header-right">
-    <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn-right"><FiX /></button>
-  </div>
-  <nav className="drawer-nav">
-    {navItems.map((item) => (
-      <div
-        key={item.key}
-        className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
-        onClick={() => { setActivePage(item.key); setDrawerOpen(false); }}
-      >
-        {item.icon}
-        <span>{item.label}</span>
-        {item.badge && parseInt(item.badge) > 0 && (
-          <span className="nav-badge">{item.badge}</span>
-        )}
+      {/* Mobile Drawer */}
+      <div className={`sidebar-drawer-overlay ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)} />
+      <div className={`sidebar-drawer ${drawerOpen ? "open" : ""}`}>
+        <div className="drawer-header-right">
+          <button onClick={() => setDrawerOpen(false)} className="drawer-close-btn-right"><FiX /></button>
+        </div>
+        <nav className="drawer-nav">
+          {navItems.map((item) => (
+            <div
+              key={item.key}
+              className={`nav-item ${activePage === item.key ? "nav-item-active" : ""}`}
+              onClick={() => { handlePageChange(item.key); setDrawerOpen(false); }}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge && parseInt(item.badge) > 0 && (
+                <span className="nav-badge">{item.badge}</span>
+              )}
+            </div>
+          ))}
+        </nav>
+        <div className="drawer-bottom">
+          <div className="drawer-profile">
+            <div className="drawer-avatar">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                userName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <div>
+              <p className="drawer-name">{userName}</p>
+              <p className="drawer-role">Student</p>
+            </div>
+          </div>
+          <div className="drawer-logout" onClick={handleLogout}>
+            <FiLogOut /> <span>Logout</span>
+          </div>
+        </div>
       </div>
-    ))}
-  </nav>
-  <div className="drawer-bottom">
-    <div className="drawer-profile">
-      <div className="drawer-avatar">
-        {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-        ) : (
-          userName.charAt(0).toUpperCase()
-        )}
-      </div>
-      <div>
-        <p className="drawer-name">{userName}</p>
-        <p className="drawer-role">Student</p>
-      </div>
-    </div>
-    <div className="drawer-logout" onClick={handleLogout}>
-      <FiLogOut /> <span>Logout</span>
-    </div>
-  </div>
-</div>
 
       <div className="main-content-area">
         <div className="topbar-sticky">
           <div className="topbar">
             <div className="topbar-left">{isMobile && <button className="mobile-menu-btn" onClick={() => setDrawerOpen(true)}><FiMenu /></button>}</div>
-            <div className="topbar-logo-center"><div className="logo-wrapper" onClick={() => setActivePage("home")}><FiZap className="logo-icon-topbar" /><span className="logo-text-topbar">CampusFreelance</span></div></div>
+            <div className="topbar-logo-center"><div className="logo-wrapper" onClick={() => handlePageChange("home")}><FiZap className="logo-icon-topbar" /><span className="logo-text-topbar">CampusFreelance</span></div></div>
             <div className="topbar-actions">
               <div className="notification-wrapper"><button className="topbar-notif" onClick={() => setShowNotifications(!showNotifications)}><FiBell />{unreadCount > 0 && <span className="notification-count">{unreadCount > 9 ? "9+" : unreadCount}</span>}</button>{showNotifications && <NotificationsPopup userId={userId} onClose={() => setShowNotifications(false)} />}</div>
-              <div className="profile-avatar-topbar" onClick={() => setActivePage("profile")}>
+              <div className="profile-avatar-topbar" onClick={() => handlePageChange("profile")}>
                 <div className="student-topbar-avatar">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
@@ -550,12 +558,13 @@ const StudentDashboard: React.FC = () => {
 
       {isMobile && (
         <div className="bottom-nav">{bottomNavItems.map((item) => (
-          <button key={item.key} className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`} onClick={() => setActivePage(item.key)}>
+          <button key={item.key} className={`bottom-nav-item ${activePage === item.key ? "active" : ""}`} onClick={() => handlePageChange(item.key)}>
             {item.icon}<span>{item.label}</span>{item.badge && parseInt(item.badge) > 0 && <span className="bottom-nav-badge">{item.badge}</span>}
           </button>
         ))}</div>
       )}
 
+      {/* Modals remain the same */}
       {showBidModal && selectedJob && (
         <div className="modal-overlay">
           <div className="modal-container">
@@ -577,7 +586,7 @@ const StudentDashboard: React.FC = () => {
             <div className="success-icon"><FiCheckCircle /></div>
             <h2>Bid Placed! 🎉</h2><p>Your bid has been submitted to {successBidData.clientName}.</p>
             <div className="bid-summary"><p><strong>Job:</strong> {successBidData.jobTitle}</p><p><strong>Amount:</strong> {formatBudget(successBidData.amount)}</p></div>
-            <div className="modal-buttons"><button onClick={() => { setShowSuccessModal(false); setActivePage("bids"); }} className="btn-primary">View My Bids</button><button onClick={() => setShowSuccessModal(false)} className="btn-outline">Continue Browsing</button></div>
+            <div className="modal-buttons"><button onClick={() => { setShowSuccessModal(false); handlePageChange("bids"); }} className="btn-primary">View My Bids</button><button onClick={() => setShowSuccessModal(false)} className="btn-outline">Continue Browsing</button></div>
           </div>
         </div>
       )}

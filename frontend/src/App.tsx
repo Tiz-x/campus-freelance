@@ -18,22 +18,28 @@ function App() {
   const location = useLocation()
   const [isRestoring, setIsRestoring] = useState(true)
 
-  // Save current route when it changes
   useEffect(() => {
-    if (user && !loading && location.pathname !== '/' && location.pathname !== '/login' && location.pathname !== '/signup' && location.pathname !== '/select-role') {
+    if (
+      user &&
+      !loading &&
+      location.pathname !== '/' &&
+      location.pathname !== '/login' &&
+      location.pathname !== '/signup' &&
+      location.pathname !== '/select-role'
+    ) {
       sessionStorage.setItem('lastRoute', location.pathname)
     }
   }, [location.pathname, user, loading])
 
-  // Restore last route on refresh - wait for auth to complete
   useEffect(() => {
     if (!loading && isRestoring) {
       const lastRoute = sessionStorage.getItem('lastRoute')
-      
-      console.log('Restoring route:', { lastRoute, currentPath: location.pathname, user: !!user })
-      
-      // Only restore if we have a saved route and we're on the root or login page
-      if (lastRoute && lastRoute !== '/' && user && (location.pathname === '/' || location.pathname === '/login')) {
+      if (
+        lastRoute &&
+        lastRoute !== '/' &&
+        user &&
+        (location.pathname === '/' || location.pathname === '/login')
+      ) {
         sessionStorage.removeItem('lastRoute')
         navigate(lastRoute, { replace: true })
       }
@@ -42,7 +48,28 @@ function App() {
   }, [loading, user, location.pathname, navigate, isRestoring])
 
   if (loading) {
-    return null
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: '#f5f7fb',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '3px solid #e2e8f0',
+          borderTopColor: '#1a9c6e',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Loading...</p>
+      </div>
+    )
   }
 
   return (
