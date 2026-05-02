@@ -15,6 +15,9 @@ const LoginPage = () => {
     password: "",
   });
 
+
+  
+
   useEffect(() => {
     if (!authLoading && profile) {
       if (profile.role === "sme") {

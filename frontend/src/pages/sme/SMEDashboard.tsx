@@ -159,24 +159,27 @@ const SMEDashboard = () => {
   };
 
   const fetchStudents = async () => {
-    setStudentsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "student")
-        .eq("is_verified", true)
-        .limit(30);
-        
-      if (!error && data) {
-        setStudents(data);
-      }
-    } catch (error) {
-      console.error("Error fetching students:", error);
-    } finally {
-      setStudentsLoading(false);
+  setStudentsLoading(true);
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(`
+        *,
+        portfolio:portfolio_items(*)
+      `)
+      .eq("role", "student")
+      .eq("is_verified", true)
+      .limit(30);
+      
+    if (!error && data) {
+      setStudents(data);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching students:", error);
+  } finally {
+    setStudentsLoading(false);
+  }
+};
 
   const fetchTransactions = async () => {
     if (!userId) return;

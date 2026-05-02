@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
+// import "../styles/auth.css";
 
 type ProfileType = {
   id: string

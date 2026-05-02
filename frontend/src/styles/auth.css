@@ -121,26 +121,23 @@
 }
 
 /* ============================================
-   INPUT WRAP — FIX: icon and placeholder overlap
-   Root cause: icon is 1rem (16px) wide, sits at
-   left:1rem (16px), so it ends at ~32px from left.
-   Input padding-left must be at least 2.75rem to
-   give the text clear room after the icon.
+   FIXED INPUT WRAP - Works for ALL auth pages
+   Higher specificity to override any conflicts
 ============================================ */
-.input-wrap {
+.auth-form .form-group .input-wrap {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
-/* Icon: vertically centered, fixed left position */
-.input-icon {
+.auth-form .form-group .input-icon {
   position: absolute;
-  left: 1rem;               /* 16px from left edge */
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;           /* softer grey so it doesn't compete with text */
-  font-size: 1rem;          /* 16px icon */
+  color: #94a3b8;
+  font-size: 1rem;
   pointer-events: none;
   z-index: 1;
   line-height: 1;
@@ -148,10 +145,11 @@
   align-items: center;
 }
 
-/* Input: left padding = icon left (1rem) + icon width (1rem) + gap (0.65rem) */
-.input-wrap input {
+.auth-form .form-group .input-wrap input,
+.auth-form .form-group .input-wrap select,
+.auth-form .form-group .input-wrap textarea {
   width: 100%;
-  padding: 0.85rem 1rem 0.85rem 2.75rem;   /* 2.75rem clears the icon cleanly */
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
   border: 1.5px solid var(--border);
   border-radius: 10px;
   font-size: 0.9rem;
@@ -163,19 +161,21 @@
   line-height: 1.5;
 }
 
-.input-wrap input::placeholder {
-  color: #94a3b8;           /* matches icon colour — both visually separate from text */
+.auth-form .form-group .input-wrap input::placeholder {
+  color: #94a3b8;
   font-size: 0.875rem;
 }
 
-.input-wrap input:focus {
+.auth-form .form-group .input-wrap input:focus,
+.auth-form .form-group .input-wrap select:focus,
+.auth-form .form-group .input-wrap textarea:focus {
   border-color: var(--primary);
   background: var(--white);
   box-shadow: 0 0 0 3px rgba(26, 156, 110, 0.08);
 }
 
-/* Eye toggle button — stays on the right, vertically centred */
-.input-toggle {
+/* Eye toggle button */
+.auth-form .form-group .input-toggle {
   position: absolute;
   right: 1rem;
   top: 50%;
@@ -191,13 +191,12 @@
   z-index: 1;
 }
 
-.input-toggle:hover {
+.auth-form .form-group .input-toggle:hover {
   color: var(--text-dark);
 }
 
-/* Password field needs extra right padding so text doesn't go under the eye icon */
-.input-wrap input[type="password"],
-.input-wrap input.has-toggle {
+/* Password field needs extra right padding */
+.auth-form .form-group .input-wrap input[type="password"] {
   padding-right: 2.75rem;
 }
 
@@ -649,3 +648,776 @@
   .setup-box h1 { font-size: 1.3rem; }
   .form-row     { grid-template-columns: 1fr; }
 }
+
+
+
+/* Error styles for form fields */
+.error-input {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+}
+
+.error-border {
+  border-color: #ef4444 !important;
+  border-width: 2px !important;
+}
+
+.field-error {
+  color: #ef4444;
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
+  text-align: left;
+}
+
+/* Required field indicator */
+.required-star {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+/* Phone input hint */
+.photo-hint {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+
+
+
+
+
+/* Portfolio Section Styles */
+.portfolio-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 1.5rem;
+}
+
+.portfolio-upload-area {
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f8fafc;
+  margin-top: 0.5rem;
+}
+
+.portfolio-upload-area:hover {
+  border-color: #6366f1;
+  background-color: #f0f4ff;
+}
+
+.portfolio-upload-icon {
+  font-size: 2rem;
+  color: #6366f1;
+  margin-bottom: 0.75rem;
+}
+
+.portfolio-upload-area p {
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.portfolio-upload-area span {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.portfolio-uploading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.portfolio-uploading p {
+  font-size: 0.875rem;
+  color: #475569;
+  margin: 0;
+}
+
+.portfolio-list {
+  margin-top: 1.5rem;
+}
+
+.portfolio-list h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.portfolio-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.portfolio-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.portfolio-item-preview {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+}
+
+.portfolio-item-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolio-file-icon {
+  font-size: 2rem;
+  color: #6366f1;
+}
+
+.portfolio-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.portfolio-title-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.portfolio-title-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.portfolio-desc-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #475569;
+  background-color: #ffffff;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.portfolio-desc-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.portfolio-remove-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fee2e2;
+  border: none;
+  border-radius: 8px;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.portfolio-remove-btn:hover {
+  background-color: #fecaca;
+  transform: scale(1.05);
+}
+
+/* Responsive Design for Portfolio */
+@media (max-width: 640px) {
+  .portfolio-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .portfolio-item-preview {
+    width: 100%;
+    height: 120px;
+  }
+
+  .portfolio-remove-btn {
+    align-self: flex-end;
+  }
+
+  .portfolio-upload-area {
+    padding: 1.5rem 1rem;
+  }
+
+  .portfolio-upload-icon {
+    font-size: 1.75rem;
+  }
+}
+
+/* Dark mode support (if your app has dark mode) */
+@media (prefers-color-scheme: dark) {
+  .portfolio-upload-area {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+
+  .portfolio-upload-area:hover {
+    background-color: #2d3a4e;
+    border-color: #6366f1;
+  }
+
+  .portfolio-upload-area p {
+    color: #f1f5f9;
+  }
+
+  .portfolio-upload-area span {
+    color: #94a3b8;
+  }
+
+  .portfolio-item {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+
+  .portfolio-item:hover {
+    border-color: #475569;
+  }
+
+  .portfolio-item-preview {
+    background-color: #0f172a;
+    border-color: #334155;
+  }
+
+  .portfolio-title-input,
+  .portfolio-desc-input {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .portfolio-title-input:focus,
+  .portfolio-desc-input:focus {
+    border-color: #6366f1;
+  }
+
+  .portfolio-list h4 {
+    color: #f1f5f9;
+    border-bottom-color: #334155;
+  }
+}
+
+
+
+
+/* Student Card Portfolio Preview */
+.student-portfolio-preview {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.student-portfolio-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.student-portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 0.5rem;
+}
+
+.student-portfolio-thumb {
+  aspect-ratio: 1 / 1;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.student-portfolio-thumb:hover {
+  transform: scale(1.05);
+  border-color: #6366f1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.student-portfolio-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-portfolio-thumb .file-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #6366f1;
+}
+
+.student-portfolio-more {
+  font-size: 0.7rem;
+  color: #6366f1;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+/* Portfolio Modal for viewing full portfolio */
+.portfolio-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.portfolio-modal-content {
+  background-color: white;
+  border-radius: 16px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+}
+
+.portfolio-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.portfolio-modal-close:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+
+.portfolio-modal-body {
+  padding: 1.5rem;
+}
+
+.portfolio-modal-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.portfolio-modal-body iframe,
+.portfolio-modal-body embed {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .portfolio-modal-content {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .portfolio-modal-body iframe,
+  .portfolio-modal-body embed {
+    height: 50vh;
+  }
+}
+
+
+
+
+/* Custom Dropdown Styles */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.custom-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: #1e293b !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-dropdown-trigger:hover {
+  border-color: #1a9c6e !important;
+}
+
+.custom-dropdown-trigger:focus {
+  border-color: #1a9c6e !important;
+  outline: none;
+}
+
+.custom-dropdown-trigger .placeholder {
+  color: #94a3b8 !important;
+}
+
+.dropdown-icon {
+  font-size: 1.2rem;
+  color: #64748b !important;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-icon.open {
+  transform: rotate(180deg);
+}
+
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  z-index: 50;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.custom-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: #1e293b !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-dropdown-item:hover {
+  background-color: #f0fdf4 !important;
+  color: #1a9c6e !important;
+}
+
+.custom-dropdown-item.selected {
+  background-color: #f0fdf4 !important;
+  color: #1a9c6e !important;
+  font-weight: 500;
+}
+
+.check-icon {
+  font-size: 1rem;
+  color: #1a9c6e !important;
+}
+
+/* Scrollbar for dropdown menu */
+.custom-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-dropdown-menu::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 10px;
+}
+
+.custom-dropdown-menu::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 10px;
+}
+
+.custom-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: #1a9c6e !important;
+}
+
+/* Error state for custom dropdown */
+.custom-dropdown-trigger.error-border {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* Rest of the portfolio styles remain the same with green theme */
+.portfolio-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 1.5rem;
+}
+
+.portfolio-upload-area {
+  border: 2px dashed #e2e8f0 !important;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f8fafc !important;
+  margin-top: 0.5rem;
+}
+
+.portfolio-upload-area:hover {
+  border-color: #1a9c6e !important;
+  background-color: #f0fdf4 !important;
+}
+
+.portfolio-upload-icon {
+  font-size: 2rem;
+  color: #1a9c6e !important;
+  margin-bottom: 0.75rem;
+}
+
+.portfolio-upload-area p {
+  font-weight: 500;
+  color: #1e293b !important;
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.portfolio-upload-area span {
+  font-size: 0.8rem;
+  color: #64748b !important;
+}
+
+.portfolio-uploading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #f8fafc !important;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0 !important;
+  border-top-color: #1a9c6e !important;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.portfolio-uploading p {
+  font-size: 0.875rem;
+  color: #475569 !important;
+  margin: 0;
+}
+
+.portfolio-list {
+  margin-top: 1.5rem;
+}
+
+.portfolio-list h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.portfolio-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f8fafc !important;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.portfolio-item:hover {
+  border-color: #1a9c6e !important;
+  box-shadow: 0 2px 8px rgba(26, 156, 110, 0.1);
+}
+
+.portfolio-item-preview {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  background-color: #ffffff !important;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.portfolio-item-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolio-file-icon {
+  font-size: 2rem;
+  color: #1a9c6e !important;
+}
+
+.portfolio-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.portfolio-title-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  background-color: #ffffff !important;
+  transition: all 0.2s ease;
+}
+
+.portfolio-title-input:focus {
+  outline: none;
+  border-color: #1a9c6e !important;
+  box-shadow: 0 0 0 3px rgba(26, 156, 110, 0.1);
+}
+
+.portfolio-desc-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #475569;
+  background-color: #ffffff !important;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.portfolio-desc-input:focus {
+  outline: none;
+  border-color: #1a9c6e !important;
+  box-shadow: 0 0 0 3px rgba(26, 156, 110, 0.1);
+}
+
+.portfolio-remove-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fee2e2;
+  border: none;
+  border-radius: 8px;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.portfolio-remove-btn:hover {
+  background-color: #fecaca;
+  transform: scale(1.05);
+}
+
+/* Responsive Design for Portfolio */
+@media (max-width: 640px) {
+  .portfolio-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .portfolio-item-preview {
+    width: 100%;
+    height: 120px;
+  }
+
+  .portfolio-remove-btn {
+    align-self: flex-end;
+  }
+
+  .portfolio-upload-area {
+    padding: 1.5rem 1rem;
+  }
+
+  .portfolio-upload-icon {
+    font-size: 1.75rem;
+  }
+}
+

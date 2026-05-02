@@ -1,226 +1,342 @@
-import { useState, useRef } from 'react'
-import {
-  FiEdit, FiCamera, FiUser, FiMail,
-  FiMapPin, FiHash, FiSave, FiStar,
-  FiCheckCircle, FiCode, FiPenTool
-} from 'react-icons/fi'
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../../lib/supabase"; 
+import { 
+  FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, 
+  FiBookOpen, FiFolder, FiFile, FiDownload,
+  FiEdit2, FiSave, FiX, FiArrowLeft
+} from "react-icons/fi";
+import { ToastContainer, useToast } from "../../../components/Toast";  // Fixed path
+import "../../../styles/student-profile.css";
 
-const StudentProfile = () => {
-  const [editing, setEditing] = useState(false)
-  const [photo, setPhoto] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [form, setForm] = useState({
-    full_name: 'Adeola Okonkwo',
-    email: 'adeola@gmail.com',
-    matric: '220404001',
-    department: 'Computer Science',
-    level: '300',
-    location: 'AAUA, Akungba-Akoko',
-    bio: 'I am a 300 level Computer Science student at AAUA with skills in UI/UX design, graphic design and social media management. I have completed over 5 freelance projects.',
-    skills: ['UI/UX Design', 'Graphic Design', 'Social Media', 'Logo Design'],
-  })
+interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  file_url: string;
+  file_type: string;
+  file_name: string;
+  created_at: string;
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+const StudentProfilePage = () => {
+  const navigate = useNavigate();
+  const { toasts, addToast, removeToast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [profile, setProfile] = useState({
+    full_name: "",
+    email: "",
+    matric_number: "",
+    department: "",
+    faculty: "",
+    level: "",
+    phone: "",
+    bio: "",
+    avatar_url: "",
+  });
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [selectedPortfolio, setSelectedPortfolio] = useState<PortfolioItem | null>(null);
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => setPhoto(reader.result as string)
-      reader.readAsDataURL(file)
+  useEffect(() => {
+    fetchProfile();
+    fetchPortfolio();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+
+        if (error) throw error;
+
+        setProfile({
+          full_name: data.full_name || "",
+          email: currentUser.email || "",
+          matric_number: data.matric_number || "",
+          department: data.department || "",
+          faculty: data.faculty || "",
+          level: data.level || "",
+          phone: data.phone || "",
+          bio: data.bio || "",
+          avatar_url: data.avatar_url || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      addToast("Failed to load profile", "error");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const fetchPortfolio = async () => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { data, error } = await supabase
+          .from('portfolio_items')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setPortfolioItems(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching portfolio:", error);
+    }
+  };
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: profile.full_name,
+            matric_number: profile.matric_number,
+            department: profile.department,
+            faculty: profile.faculty,
+            level: profile.level,
+            phone: profile.phone,
+            bio: profile.bio,
+          })
+          .eq('id', currentUser.id);
+
+        if (error) throw error;
+        addToast("Profile updated successfully!", "success");
+        setEditing(false);
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      addToast("Failed to update profile", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openPortfolioModal = (item: PortfolioItem) => {
+    setSelectedPortfolio(item);
+  };
+
+  const closePortfolioModal = () => {
+    setSelectedPortfolio(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="student-profile-loading">
+        <div className="spinner"></div>
+        <p>Loading profile...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="view-container">
-      <div className="view-header">
-        <div>
-          <h1 className="view-title">My Profile</h1>
-          <p className="view-sub">Manage your student profile</p>
-        </div>
-        <button
-          className={editing ? 'btn-primary' : 'btn-outline'}
-          onClick={() => setEditing(!editing)}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-        >
-          {editing ? <><FiSave /> Save Changes</> : <><FiEdit /> Edit Profile</>}
+    <div className="student-profile-container">
+      <div className="student-profile-header">
+        <button onClick={() => navigate("/dashboard/student")} className="back-btn">
+          <FiArrowLeft /> Back to Dashboard
         </button>
+        <h1>My Profile</h1>
+        {!editing ? (
+          <button onClick={() => setEditing(true)} className="edit-btn">
+            <FiEdit2 /> Edit Profile
+          </button>
+        ) : (
+          <div className="edit-actions">
+            <button onClick={() => setEditing(false)} className="cancel-btn">
+              <FiX /> Cancel
+            </button>
+            <button onClick={handleUpdate} className="save-btn">
+              <FiSave /> Save Changes
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="profile-layout">
-        {/* LEFT */}
-        <div className="profile-left">
-          <div className="profile-card">
-            <div className="profile-photo-wrap">
-              <div className="profile-photo" onClick={() => editing && fileRef.current?.click()}>
-                {photo ? (
-                  <img src={photo} alt="Profile" />
-                ) : (
-                  <div className="profile-photo-placeholder">
-                    <FiUser />
+      <div className="student-profile-content">
+        {/* Profile Card */}
+        <div className="profile-card">
+          <div className="profile-avatar">
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.full_name} />
+            ) : (
+              <div className="avatar-placeholder">
+                <FiUser size={48} />
+              </div>
+            )}
+          </div>
+          
+          <div className="profile-info">
+            {!editing ? (
+              <>
+                <h2>{profile.full_name}</h2>
+                <p className="profile-email"><FiMail /> {profile.email}</p>
+                {profile.matric_number && (
+                  <p className="profile-matric"><FiMapPin /> Matric: {profile.matric_number}</p>
+                )}
+                {profile.department && (
+                  <p className="profile-dept"><FiBriefcase /> {profile.department}</p>
+                )}
+                {profile.faculty && (
+                  <p className="profile-faculty"><FiBookOpen /> {profile.faculty}</p>
+                )}
+                {profile.level && (
+                  <p className="profile-level"><FiBookOpen /> {profile.level}</p>
+                )}
+                {profile.phone && (
+                  <p className="profile-phone"><FiPhone /> {profile.phone}</p>
+                )}
+                {profile.bio && (
+                  <div className="profile-bio">
+                    <h3>About Me</h3>
+                    <p>{profile.bio}</p>
                   </div>
                 )}
-                {editing && (
-                  <div className="profile-photo-overlay">
-                    <FiCamera />
-                  </div>
-                )}
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileRef}
-                onChange={handlePhoto}
-                style={{ display: 'none' }}
-              />
-            </div>
-            <h2 className="profile-name">{form.full_name}</h2>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-              <FiCheckCircle style={{ color: 'var(--primary)', fontSize: '0.9rem' }} />
-              <p className="profile-type">Verified Student</p>
-            </div>
-            <p className="profile-type">{form.department} · {form.level}L</p>
-
-            <div className="profile-stats">
-              <div className="profile-stat">
-                <span className="profile-stat-value">5</span>
-                <span className="profile-stat-label">Completed</span>
-              </div>
-              <div className="profile-stat">
-                <span className="profile-stat-value">4.8</span>
-                <span className="profile-stat-label">Rating</span>
-              </div>
-              <div className="profile-stat">
-                <span className="profile-stat-value">₦85k</span>
-                <span className="profile-stat-label">Earned</span>
-              </div>
-            </div>
-
-            <div className="profile-rating-row">
-              {[1,2,3,4,5].map(s => (
-                <FiStar key={s} style={{ color: s <= 4 ? '#f59e0b' : 'var(--border)', fontSize: '1rem' }} />
-              ))}
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginLeft: '0.3rem' }}>4.8 (12 reviews)</span>
-            </div>
-          </div>
-
-          <div className="profile-card" style={{ marginTop: '1rem' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--secondary)', marginBottom: '1rem' }}>Skills</h3>
-            <div className="skills-list">
-              {form.skills.map((skill, i) => (
-                <span key={i} className="skill-tag">{skill}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT */}
-        <div className="profile-right">
-          <div className="profile-form-card">
-            <h3>Personal Information</h3>
-            <div className="profile-form">
-              <div className="form-row">
+              </>
+            ) : (
+              <div className="profile-edit-form">
                 <div className="form-group">
-                  <label>Full name</label>
-                  <div className="input-wrap">
-                    <FiUser className="input-icon" />
-                    <input
-                      type="text"
-                      name="full_name"
-                      value={form.full_name}
-                      onChange={handleChange}
-                      disabled={!editing}
-                    />
-                  </div>
+                  <label>Full Name</label>
+                  <input
+                    type="text"
+                    value={profile.full_name}
+                    onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Email</label>
-                  <div className="input-wrap">
-                    <FiMail className="input-icon" />
-                    <input
-                      type="text"
-                      name="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      disabled={!editing}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Matric number</label>
-                  <div className="input-wrap">
-                    <FiHash className="input-icon" />
-                    <input
-                      type="text"
-                      name="matric"
-                      value={form.matric}
-                      disabled
-                    />
-                  </div>
+                  <label>Matriculation Number</label>
+                  <input
+                    type="text"
+                    value={profile.matric_number}
+                    onChange={(e) => setProfile({...profile, matric_number: e.target.value})}
+                  />
                 </div>
                 <div className="form-group">
                   <label>Department</label>
-                  <div className="input-wrap">
-                    <FiCode className="input-icon" />
-                    <input
-                      type="text"
-                      name="department"
-                      value={form.department}
-                      onChange={handleChange}
-                      disabled={!editing}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={profile.department}
+                    onChange={(e) => setProfile({...profile, department: e.target.value})}
+                  />
                 </div>
-              </div>
-              <div className="form-row">
+                <div className="form-group">
+                  <label>Faculty</label>
+                  <input
+                    type="text"
+                    value={profile.faculty}
+                    onChange={(e) => setProfile({...profile, faculty: e.target.value})}
+                  />
+                </div>
                 <div className="form-group">
                   <label>Level</label>
-                  <div className="input-wrap">
-                    <FiPenTool className="input-icon" />
-                    <input
-                      type="text"
-                      name="level"
-                      value={form.level}
-                      onChange={handleChange}
-                      disabled={!editing}
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={profile.level}
+                    onChange={(e) => setProfile({...profile, level: e.target.value})}
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Location</label>
-                  <div className="input-wrap">
-                    <FiMapPin className="input-icon" />
-                    <input
-                      type="text"
-                      name="location"
-                      value={form.location}
-                      onChange={handleChange}
-                      disabled={!editing}
-                    />
-                  </div>
+                  <label>Phone Number</label>
+                  <input
+                    type="tel"
+                    value={profile.phone}
+                    onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Bio</label>
+                  <textarea
+                    rows={4}
+                    value={profile.bio}
+                    onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                  />
                 </div>
               </div>
-              <div className="form-group">
-                <label>Bio</label>
-                <textarea
-                  name="bio"
-                  value={form.bio}
-                  onChange={handleChange}
-                  disabled={!editing}
-                  className="textarea-input"
-                  rows={4}
-                />
-              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Portfolio Section */}
+        <div className="portfolio-section">
+          <div className="portfolio-header">
+            <h2><FiFolder /> My Portfolio</h2>
+            <p className="portfolio-count">{portfolioItems.length} items</p>
+          </div>
+          
+          {portfolioItems.length === 0 ? (
+            <div className="empty-portfolio">
+              <FiFolder size={48} />
+              <p>No portfolio items yet</p>
+              <p className="empty-hint">Upload your work samples during verification</p>
+            </div>
+          ) : (
+            <div className="portfolio-grid">
+              {portfolioItems.map((item) => (
+                <div key={item.id} className="portfolio-card" onClick={() => openPortfolioModal(item)}>
+                  <div className="portfolio-preview">
+                    {item.file_type.startsWith('image/') ? (
+                      <img src={item.file_url} alt={item.title} />
+                    ) : (
+                      <div className="file-preview">
+                        <FiFile size={32} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="portfolio-info">
+                    <h3>{item.title}</h3>
+                    {item.description && <p>{item.description.substring(0, 60)}...</p>}
+                    <a href={item.file_url} download={item.file_name} className="download-link" onClick={(e) => e.stopPropagation()}>
+                      <FiDownload /> Download
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Portfolio Modal */}
+      {selectedPortfolio && (
+        <div className="portfolio-modal-overlay" onClick={closePortfolioModal}>
+          <div className="portfolio-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closePortfolioModal}>
+              <FiX />
+            </button>
+            <div className="modal-body">
+              <h2>{selectedPortfolio.title}</h2>
+              {selectedPortfolio.description && <p>{selectedPortfolio.description}</p>}
+              {selectedPortfolio.file_type.startsWith('image/') ? (
+                <img src={selectedPortfolio.file_url} alt={selectedPortfolio.title} />
+              ) : selectedPortfolio.file_type === 'application/pdf' ? (
+                <iframe src={selectedPortfolio.file_url} title={selectedPortfolio.title} />
+              ) : (
+                <div className="file-download-section">
+                  <FiFile size={64} />
+                  <p>{selectedPortfolio.file_name}</p>
+                  <a href={selectedPortfolio.file_url} download className="download-btn">
+                    <FiDownload /> Download File
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
+      )}
 
-export default StudentProfile
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+    </div>
+  );
+};
+
+export default StudentProfilePage;
