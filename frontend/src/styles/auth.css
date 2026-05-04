@@ -1421,3 +1421,122 @@
   }
 }
 
+
+
+
+
+
+
+/* ========================================
+   AUTH PAGES - FIX ERROR MESSAGES ON MOBILE
+======================================== */
+
+/* Ensure error messages are visible on all devices */
+.auth-error {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+  border-left: 4px solid #dc2626;
+  word-wrap: break-word;
+  white-space: normal;
+  text-align: left;
+}
+
+/* Mobile specific fixes */
+@media (max-width: 768px) {
+  .auth-page {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  .auth-left {
+    display: none;
+  }
+  
+  .auth-right {
+    width: 100%;
+    padding: 2rem 1.5rem;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .auth-box {
+    width: 100%;
+    max-width: 400px;
+    padding: 1.5rem;
+    margin: 0 auto;
+  }
+  
+  /* Make error messages larger and more visible on mobile */
+  .auth-error {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+    border-radius: 10px;
+  }
+  
+  /* Form group spacing */
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  /* Input fields */
+  .input-wrap {
+    min-height: 48px;
+  }
+  
+  .input-wrap input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.875rem 0.875rem 0.875rem 2.5rem;
+  }
+  
+  /* Button */
+  .auth-btn {
+    padding: 0.875rem;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+  }
+  
+  /* Switch text */
+  .auth-switch {
+    font-size: 0.875rem;
+    text-align: center;
+    margin-top: 1.5rem;
+  }
+}
+
+/* For very small devices */
+@media (max-width: 480px) {
+  .auth-right {
+    padding: 1rem;
+  }
+  
+  .auth-box {
+    padding: 1.25rem;
+  }
+  
+  .auth-error {
+    font-size: 0.8rem;
+    padding: 0.7rem;
+  }
+  
+  .auth-box h1 {
+    font-size: 1.5rem;
+  }
+  
+  .auth-sub {
+    font-size: 0.875rem;
+  }
+}
+
+/* Ensure the loading spinner animation is defined */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

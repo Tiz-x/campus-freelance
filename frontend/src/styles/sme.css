@@ -821,6 +821,7 @@
 @media (max-width: 768px) {
   .scrollable-content {
     padding: 0.25rem 0.75rem 0.75rem 0.75rem;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 }
 
