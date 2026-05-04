@@ -2800,3 +2800,511 @@ body.modal-open .sidebar {
 .uploaded-file button:hover {
   color: #ef4444;
 }
+
+
+
+
+
+
+/* Modern Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Desktop Modal */
+.modal-container {
+  background: white;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 550px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Mobile Full Screen */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+  
+  .modal-container {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    animation: none;
+  }
+  
+  .success-modal-container {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
+    width: 100%;
+  }
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #1f2937;
+}
+
+.modal-close {
+  background: #f3f4f6;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+  font-size: 1.25rem;
+}
+
+.modal-close:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+  transform: scale(1.05);
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  position: sticky;
+  bottom: 0;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 0.875rem;
+  background: #1a9c6e;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #15855c;
+  transform: translateY(-1px);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Success Modal */
+.success-modal-container {
+  background: white;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 500px;
+  padding: 2rem;
+  text-align: center;
+  animation: slideUp 0.3s ease-out;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 768px) {
+  .success-modal-container {
+    border-radius: 0;
+    max-width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+.success-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 1rem 0 0.5rem;
+}
+
+.success-message {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.bid-details-card {
+  background: #f9fafb;
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.bid-detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.bid-detail-item:last-child {
+  border-bottom: none;
+}
+
+.bid-detail-label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.bid-detail-value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.bid-detail-value.highlight {
+  color: #1a9c6e;
+  font-size: 1.25rem;
+}
+
+.success-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.success-btn-primary,
+.success-btn-secondary {
+  flex: 1;
+  padding: 0.875rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.success-btn-primary {
+  background: #1a9c6e;
+  color: white;
+  border: none;
+}
+
+.success-btn-primary:hover {
+  background: #15855c;
+  transform: translateY(-1px);
+}
+
+.success-btn-secondary {
+  background: white;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.success-btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Success Animation */
+.success-animation {
+  margin-bottom: 1rem;
+}
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+
+.check-icon {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  border-radius: 50%;
+  box-sizing: content-box;
+  border: 4px solid #4caf50;
+}
+
+.check-icon::before {
+  top: 3px;
+  left: -2px;
+  width: 30px;
+  transform-origin: 100% 50%;
+  border-radius: 100px 0 0 100px;
+}
+
+.check-icon::after {
+  top: 0;
+  left: 30px;
+  width: 60px;
+  transform-origin: 0 50%;
+  border-radius: 0 100px 100px 0;
+  animation: rotateCircle 4.25s ease-in;
+}
+
+.check-icon::before,
+.check-icon::after {
+  content: '';
+  height: 100px;
+  position: absolute;
+  background: #4caf50;
+  transform: rotate(-45deg);
+}
+
+.check-icon .check-line {
+  height: 5px;
+  background-color: #4caf50;
+  display: block;
+  border-radius: 2px;
+  position: absolute;
+  z-index: 10;
+}
+
+.check-icon .check-line.tip {
+  width: 25px;
+  left: 14px;
+  top: 46px;
+  transform: rotate(45deg);
+  animation: iconLineTip 0.75s;
+}
+
+.check-icon .check-line.long {
+  width: 47px;
+  left: 30px;
+  top: 38px;
+  transform: rotate(-45deg);
+  animation: iconLineLong 0.75s;
+}
+
+.check-icon .check-circle {
+  top: -4px;
+  left: -4px;
+  z-index: 10;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  position: absolute;
+  box-sizing: content-box;
+  border: 4px solid rgba(76, 175, 80, 0.5);
+}
+
+@keyframes iconLineTip {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 25px;
+    opacity: 1;
+  }
+}
+
+@keyframes iconLineLong {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 47px;
+    opacity: 1;
+  }
+}
+
+@keyframes rotateCircle {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Bid Modal Form Styles */
+.job-info {
+  background: #f0fdf4;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.job-info-title {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.job-info-budget {
+  font-size: 0.875rem;
+  color: #1a9c6e;
+  font-weight: 500;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #374151;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1a9c6e;
+  box-shadow: 0 0 0 3px rgba(26, 156, 110, 0.1);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Portfolio Upload Area */
+.portfolio-upload-area {
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  background: #f9fafb;
+}
+
+.upload-btn {
+  background: white;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.upload-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+.uploaded-files {
+  margin-top: 1rem;
+}
+
+.uploaded-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.uploaded-file button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ef4444;
+  padding: 0.25rem;
+}
+
+.error-message {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}

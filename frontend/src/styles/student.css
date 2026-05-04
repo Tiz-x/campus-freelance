@@ -1033,12 +1033,18 @@
 /* ========================================
    OTHER PAGES (Jobs, Bids, Earnings, Profile, Messages)
 ======================================== */
+
 .jobs-page, .bids-page, .earnings-page, .profile-page {
   padding: 0.5rem 0;
 }
 
 .page-header {
   margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .page-header h2 {
@@ -1052,6 +1058,7 @@
   color: #64748b;
 }
 
+/* Search Bar */
 .search-bar {
   display: flex;
   align-items: center;
@@ -1070,6 +1077,7 @@
   font-size: 0.85rem;
 }
 
+/* Messages */
 .messages-container {
   background: white;
   border-radius: 20px;
@@ -1100,6 +1108,7 @@
   padding: 0.75rem 1rem;
   cursor: pointer;
   border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
 }
 
 .chat-list-item:hover {
@@ -1165,116 +1174,409 @@
   font-weight: 700;
 }
 
-.earnings-card {
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  border-radius: 20px;
-  padding: 1.25rem;
-  color: white;
-  margin-bottom: 1rem;
-}
-
-.total-earned .amount {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #2dd4a0;
-}
-
-.info-card {
-  display: flex;
-  gap: 0.75rem;
-  background: rgba(26, 156, 110, 0.08);
-  border-radius: 16px;
-  padding: 0.9rem;
-}
+/* ========================================
+   PROFILE CARD STYLES (UPDATED)
+======================================== */
 
 .profile-page {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 1rem;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .profile-card {
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   border: 1px solid #e2e8f0;
-  padding: 1.25rem;
+  padding: 2rem 1.5rem;
   text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 80px;
+  height: fit-content;
 }
 
 .profile-avatar {
-  width: 70px;
-  height: 70px;
-  margin: 0 auto 0.75rem;
-  background: var(--primary);
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #1a9c6e 0%, #0d5c41 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 800;
+  font-size: 3rem;
+  font-weight: 700;
   border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(26, 156, 110, 0.3);
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-card h3 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.profile-card p {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
 }
 
 .profile-stats {
   display: flex;
   justify-content: space-around;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid #e2e8f0;
+  gap: 1rem;
+}
+
+.profile-stats > div {
+  text-align: center;
+  flex: 1;
 }
 
 .profile-stats span {
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: var(--primary);
   display: block;
 }
 
 .profile-stats label {
-  font-size: 0.55rem;
+  font-size: 0.7rem;
   color: #94a3b8;
+  font-weight: 500;
 }
 
 .profile-form {
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   border: 1px solid #e2e8f0;
-  padding: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.profile-form h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: #0f172a;
 }
 
 .profile-form input,
 .profile-form textarea {
   width: 100%;
-  padding: 0.6rem;
+  padding: 0.75rem;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  margin-bottom: 0.6rem;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
   font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
 
-/* Modal */
+.profile-form input:focus,
+.profile-form textarea:focus {
+  outline: none;
+  border-color: #1a9c6e;
+  box-shadow: 0 0 0 3px rgba(26, 156, 110, 0.1);
+}
+
+.profile-form input:disabled {
+  background: #f8fafc;
+  cursor: not-allowed;
+  color: #64748b;
+}
+
+/* ========================================
+   EARNINGS PAGE STYLES
+======================================== */
+
+.earnings-card {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-radius: 24px;
+  padding: 1.5rem;
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.total-earned {
+  text-align: center;
+}
+
+.total-earned span {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.total-earned .amount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #2dd4a0;
+}
+
+.earnings-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.earnings-stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.earnings-stat-card .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.earnings-stat-card .stat-icon.green {
+  background: rgba(26, 156, 110, 0.1);
+  color: #1a9c6e;
+}
+
+.earnings-stat-card .stat-icon.orange {
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
+.earnings-stat-card .stat-icon.blue {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.earnings-stat-card .stat-info {
+  flex: 1;
+}
+
+.earnings-stat-card .stat-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  display: block;
+}
+
+.earnings-stat-card .stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.transaction-history {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.transaction-history h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 1rem;
+  margin: 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.transactions-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.transaction-item:hover {
+  background: #f8fafc;
+}
+
+.transaction-info {
+  flex: 1;
+}
+
+.transaction-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #0f172a;
+  margin-bottom: 0.2rem;
+}
+
+.transaction-date {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.transaction-amount {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.transaction-status {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  margin-left: 0.75rem;
+}
+
+.transaction-status.success {
+  background: rgba(26, 156, 110, 0.1);
+  color: #1a9c6e;
+}
+
+.transaction-status.pending {
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
+/* ========================================
+   INFO CARD
+======================================== */
+
+.info-card {
+  display: flex;
+  gap: 0.75rem;
+  background: rgba(26, 156, 110, 0.08);
+  border-radius: 16px;
+  padding: 1rem;
+  align-items: flex-start;
+  border: 1px solid rgba(26, 156, 110, 0.2);
+}
+
+.info-icon {
+  color: #1a9c6e;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.info-card h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  color: #0f172a;
+}
+
+.info-card p {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ========================================
+   PAYSTACK PAYMENT BUTTON STYLES
+======================================== */
+
+.paystack-payment-wrapper {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.paystack-payment-button {
+  width: 100%;
+  padding: 0.85rem;
+  background: linear-gradient(135deg, #1a9c6e 0%, #0d5c41 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.paystack-payment-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 156, 110, 0.3);
+}
+
+.paystack-payment-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.paystack-payment-button:disabled {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.paystack-payment-button svg {
+  font-size: 1rem;
+}
+
+/* Desktop specific */
+@media (min-width: 769px) {
+  .paystack-payment-button {
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
+/* ========================================
+   MODAL STYLES
+======================================== */
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .modal-container {
   background: white;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 450px;
-  max-height: 85vh;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
   overflow-y: auto;
   animation: modalSlideIn 0.3s ease;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 @keyframes modalSlideIn {
@@ -1292,92 +1594,351 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.9rem 1rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
 }
 
 .modal-close {
-  background: none;
+  background: #f1f5f9;
   border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: #94a3b8;
-}
-
-.modal-body {
-  padding: 1rem;
-}
-
-.modal-footer {
-  padding: 0.75rem 1rem 1rem;
-}
-
-.success-modal {
-  text-align: center;
-}
-
-.success-icon {
-  width: 50px;
-  height: 50px;
-  background: var(--primary);
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 1rem auto 0.75rem;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s;
+  font-size: 1rem;
 }
 
-.success-icon svg {
-  color: white;
-  font-size: 1.5rem;
+.modal-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: scale(1.05);
 }
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: white;
+  position: sticky;
+  bottom: 0;
+}
+
+/* Success Modal */
+.success-modal-container {
+  background: white;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 450px;
+  padding: 2rem;
+  text-align: center;
+  animation: modalSlideIn 0.3s ease;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.success-animation {
+  margin-bottom: 1rem;
+}
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+
+.check-icon {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  border-radius: 50%;
+  box-sizing: content-box;
+  border: 4px solid #4caf50;
+}
+
+.check-icon .check-line {
+  height: 5px;
+  background-color: #4caf50;
+  display: block;
+  border-radius: 2px;
+  position: absolute;
+  z-index: 10;
+}
+
+.check-icon .check-line.tip {
+  width: 25px;
+  left: 14px;
+  top: 46px;
+  transform: rotate(45deg);
+  animation: iconLineTip 0.75s;
+}
+
+.check-icon .check-line.long {
+  width: 47px;
+  left: 30px;
+  top: 38px;
+  transform: rotate(-45deg);
+  animation: iconLineLong 0.75s;
+}
+
+.check-icon .check-circle {
+  top: -4px;
+  left: -4px;
+  z-index: 10;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  position: absolute;
+  box-sizing: content-box;
+  border: 4px solid rgba(76, 175, 80, 0.5);
+}
+
+@keyframes iconLineTip {
+  from { width: 0; opacity: 0; }
+  to { width: 25px; opacity: 1; }
+}
+
+@keyframes iconLineLong {
+  from { width: 0; opacity: 0; }
+  to { width: 47px; opacity: 1; }
+}
+
+.success-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.5rem 0;
+}
+
+.success-message {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.bid-details-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.bid-detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.bid-detail-item:first-child {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.bid-detail-label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.bid-detail-value {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.bid-detail-value.highlight {
+  color: #1a9c6e;
+  font-size: 1rem;
+}
+
+.success-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.success-btn-primary,
+.success-btn-secondary {
+  flex: 1;
+  padding: 0.7rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.success-btn-primary {
+  background: #1a9c6e;
+  color: white;
+  border: none;
+}
+
+.success-btn-primary:hover {
+  background: #0d5c41;
+}
+
+.success-btn-secondary {
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.success-btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* ========================================
+   FORM GROUP STYLES
+======================================== */
 
 .form-group {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
+  color: #334155;
 }
 
 .form-group input,
 .form-group textarea {
   width: 100%;
-  padding: 0.55rem;
+  padding: 0.7rem;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: inherit;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1a9c6e;
+  box-shadow: 0 0 0 3px rgba(26, 156, 110, 0.1);
 }
 
 .form-group small {
   font-size: 0.65rem;
   color: #94a3b8;
+  display: block;
+  margin-top: 0.25rem;
 }
 
-.btn-primary {
-  background: var(--primary);
-  color: white;
-  border: none;
+.error-message {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 0.6rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* Portfolio Upload */
+.portfolio-upload-area {
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.upload-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
   padding: 0.5rem 1rem;
   border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  background: #f1f5f9;
+}
+
+.upload-hint {
+  display: block;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+}
+
+.uploaded-files {
+  margin-top: 0.75rem;
+}
+
+.uploaded-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.uploaded-file button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ef4444;
+}
+
+/* ========================================
+   BUTTONS
+======================================== */
+
+.btn-primary {
+  background: #1a9c6e;
+  color: white;
+  border: none;
+  padding: 0.7rem 1.25rem;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
+  background: #0d5c41;
+  transform: translateY(-1px);
 }
 
 .btn-outline {
   background: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border: 1px solid #1a9c6e;
+  color: #1a9c6e;
+  padding: 0.7rem 1.25rem;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -1391,33 +1952,72 @@
   width: 100%;
 }
 
+/* ========================================
+   EMPTY & LOADING STATES
+======================================== */
+
 .empty-state {
   text-align: center;
-  padding: 1.5rem;
+  padding: 2rem;
   color: #94a3b8;
+}
+
+.empty-state.small {
+  padding: 1.5rem;
 }
 
 .empty-icon {
   font-size: 2rem;
   margin-bottom: 0.5rem;
+  opacity: 0.5;
 }
 
 .loading-state {
   text-align: center;
-  padding: 1.5rem;
+  padding: 2rem;
   color: #94a3b8;
 }
+
+/* ========================================
+   RESPONSIVE
+======================================== */
 
 @media (max-width: 1024px) {
   .profile-page {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .profile-card {
+    position: relative;
+    top: 0;
   }
 }
 
 @media (max-width: 768px) {
   .modal-container {
     width: 95%;
-    border-radius: 16px;
+    border-radius: 20px;
+    max-height: 85vh;
+  }
+  
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+  
+  .success-modal-container {
+    width: 90%;
+    padding: 1.5rem;
+  }
+  
+  .success-actions {
+    flex-direction: column;
+    gap: 0.5rem;
   }
   
   .chat-list-header {
@@ -1436,6 +2036,35 @@
   
   .chat-name {
     font-size: 0.8rem;
+  }
+  
+  .earnings-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .transaction-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .transaction-amount {
+    margin-left: 0;
+  }
+  
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    font-size: 2.5rem;
+  }
+  
+  .profile-card {
+    padding: 1.5rem;
+  }
+  
+  .profile-stats span {
+    font-size: 1rem;
   }
 }
 
