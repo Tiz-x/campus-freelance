@@ -75,10 +75,12 @@ const SMEDashboard = () => {
 
   useRoutePersistence();
 
-
   const handlePageChange = (page: string) => {
     sessionStorage.setItem("sme_activePage", page);
     setActivePage(page);
+    if (page === "messages") {
+      setChatUnreadCount(0);
+    }
   };
 
   useEffect(() => {
@@ -156,12 +158,12 @@ const SMEDashboard = () => {
   }, [userId]);
 
   const fetchUnreadMessageCount = async () => {
-    const { data } = await supabase
+    const { count } = await supabase
       .from("messages")
-      .select("id", { count: "exact", head: true })
+      .select("*", { count: "exact", head: true })
       .eq("receiver_id", userId)
       .eq("is_read", false);
-    setChatUnreadCount(data?.length || 0);
+    setChatUnreadCount(count || 0);
   };
 
   const fetchUnreadNotificationCount = async () => {
@@ -211,19 +213,21 @@ const SMEDashboard = () => {
   };
 
   const fetchTransactions = async () => {
-  if (!userId) return
-  setTransactionsLoading(true)
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*, jobs(title)')
-    .or(`payer_id.eq.${userId},job_id.in.(${jobs.map(j => j.id).join(',')})`)
-    .order('created_at', { ascending: false })
+    if (!userId) return;
+    setTransactionsLoading(true);
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*, jobs(title)")
+      .or(
+        `payer_id.eq.${userId},job_id.in.(${jobs.map((j) => j.id).join(",")})`,
+      )
+      .order("created_at", { ascending: false });
 
-  if (!error && data) {
-    setTransactions(data)
-  }
-  setTransactionsLoading(false)
-}
+    if (!error && data) {
+      setTransactions(data);
+    }
+    setTransactionsLoading(false);
+  };
 
   const fetchJobs = async (smeId: string) => {
     try {
@@ -424,92 +428,94 @@ const SMEDashboard = () => {
     setShowConfirmModal(true);
   };
   const confirmCompleteJob = async () => {
-  if (!pendingAction?.data) return
-  const { jobId, studentId, amount, jobTitle } = pendingAction.data
+    if (!pendingAction?.data) return;
+    const { jobId, studentId, amount, jobTitle } = pendingAction.data;
 
-  try {
-    // STEP 1: Find the held transaction for this job
-    const { data: txData, error: findError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('job_id', jobId)
-      .eq('status', 'held')
-      .maybeSingle()
+    try {
+      // STEP 1: Find the held transaction for this job
+      const { data: txData, error: findError } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("job_id", jobId)
+        .eq("status", "held")
+        .maybeSingle();
 
-    if (findError || !txData) {
-      addToast('No escrow transaction found for this job.', 'error')
-      setShowConfirmModal(false)
-      setPendingAction(null)
-      return
-    }
+      if (findError || !txData) {
+        addToast("No escrow transaction found for this job.", "error");
+        setShowConfirmModal(false);
+        setPendingAction(null);
+        return;
+      }
 
-    // STEP 2: Release transaction
-    const { error: txError } = await supabase
-      .from('transactions')
-      .update({ status: 'released' })
-      .eq('id', txData.id)
+      // STEP 2: Release transaction
+      const { error: txError } = await supabase
+        .from("transactions")
+        .update({ status: "released" })
+        .eq("id", txData.id);
 
-    if (txError) {
-      addToast('Failed to release payment: ' + txError.message, 'error')
-      setShowConfirmModal(false)
-      setPendingAction(null)
-      return
-    }
+      if (txError) {
+        addToast("Failed to release payment: " + txError.message, "error");
+        setShowConfirmModal(false);
+        setPendingAction(null);
+        return;
+      }
 
-    // STEP 3: Update job to completed
-    await supabase
-      .from('jobs')
-      .update({ status: 'completed', payment_status: 'released' })
-      .eq('id', jobId)
-
-    // STEP 4: Update escrow_transactions
-    await supabase
-      .from('escrow_transactions')
-      .update({ status: 'released', released_at: new Date().toISOString() })
-      .eq('job_id', jobId)
-
-    // STEP 5: Update student profile — add to total earned
-    const { data: studentProfile } = await supabase
-      .from('profiles')
-      .select('total_earned, total_jobs')
-      .eq('id', studentId)
-      .maybeSingle()
-
-    if (studentProfile) {
+      // STEP 3: Update job to completed
       await supabase
-        .from('profiles')
-        .update({
-          total_earned: (studentProfile.total_earned || 0) + amount,
-          total_jobs: (studentProfile.total_jobs || 0) + 1,
-        })
-        .eq('id', studentId)
+        .from("jobs")
+        .update({ status: "completed", payment_status: "released" })
+        .eq("id", jobId);
+
+      // STEP 4: Update escrow_transactions
+      await supabase
+        .from("escrow_transactions")
+        .update({ status: "released", released_at: new Date().toISOString() })
+        .eq("job_id", jobId);
+
+      // STEP 5: Update student profile — add to total earned
+      const { data: studentProfile } = await supabase
+        .from("profiles")
+        .select("total_earned, total_jobs")
+        .eq("id", studentId)
+        .maybeSingle();
+
+      if (studentProfile) {
+        await supabase
+          .from("profiles")
+          .update({
+            total_earned: (studentProfile.total_earned || 0) + amount,
+            total_jobs: (studentProfile.total_jobs || 0) + 1,
+          })
+          .eq("id", studentId);
+      }
+
+      // STEP 6: Notify student
+      await supabase.from("notifications").insert({
+        user_id: studentId,
+        type: "payment_released",
+        title: "Payment Released! 💰",
+        message: `Payment of ₦${amount.toLocaleString()} for "${jobTitle}" has been released to your account!`,
+        related_id: jobId,
+        is_read: false,
+      });
+
+      addToast(
+        `✓ Job completed! ₦${amount.toLocaleString()} released to student.`,
+        "success",
+      );
+
+      // STEP 7: Refresh data
+      await fetchJobs(userId);
+      await fetchTransactions();
+      await fetchBids(userId);
+    } catch (error) {
+      console.error("Error completing job:", error);
+      addToast("Failed to complete job. Please try again.", "error");
+    } finally {
+      setShowConfirmModal(false);
+      setPendingAction(null);
     }
-
-    // STEP 6: Notify student
-    await supabase.from('notifications').insert({
-      user_id: studentId,
-      type: 'payment_released',
-      title: 'Payment Released! 💰',
-      message: `Payment of ₦${amount.toLocaleString()} for "${jobTitle}" has been released to your account!`,
-      related_id: jobId,
-      is_read: false,
-    })
-
-    addToast(`✓ Job completed! ₦${amount.toLocaleString()} released to student.`, 'success')
-
-    // STEP 7: Refresh data
-    await fetchJobs(userId)
-    await fetchTransactions()
-    await fetchBids(userId)
-
-  } catch (error) {
-    console.error('Error completing job:', error)
-    addToast('Failed to complete job. Please try again.', 'error')
-  } finally {
-    setShowConfirmModal(false)
-    setPendingAction(null)
-  }
-};
+  };
 
   const viewJobBids = (job: any) => {
     setSelectedJob(job);
@@ -1308,17 +1314,25 @@ const SMEDashboard = () => {
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
                   <FiBell />
-                  {unreadCount > 0 && (
+                  {unreadCount + chatUnreadCount > 0 && (
                     <span className="notification-count">
-                      {unreadCount > 9 ? "9+" : unreadCount}
+                      {unreadCount + chatUnreadCount > 9
+                        ? "9+"
+                        : unreadCount + chatUnreadCount}
                     </span>
                   )}
                 </button>
                 {showNotifications && (
-                  <NotificationsPopup
-                    userId={userId}
-                    onClose={() => setShowNotifications(false)}
-                  />
+                  <>
+                    <div
+                      className="notifications-backdrop"
+                      onClick={() => setShowNotifications(false)}
+                    />
+                    <NotificationsPopup
+                      userId={userId}
+                      onClose={() => setShowNotifications(false)}
+                    />
+                  </>
                 )}
               </div>
               <div
@@ -1640,27 +1654,27 @@ const SMEDashboard = () => {
                           <FiMessageCircle /> Message Student
                         </button>
                         {selectedJob.payment_status !== "paid" && (
-  <PaystackPayment
-    amount={bid.amount}
-    email={userEmail}
-    jobId={selectedJob.id}
-    jobTitle={selectedJob.title}
-    studentId={bid.student_id}
-    addToast={addToast}
-    onSuccess={() => {
-      // Optional additional toast after payment completes
-      addToast(
-        "Payment processed! The student can now start working on the job.",
-        "success"
-      );
-      fetchBids(userId);
-      fetchJobs(userId);
-      fetchTransactions();
-      setShowBidsModal(false);
-    }}
-    onClose={() => {}}
-  />
-)}
+                          <PaystackPayment
+                            amount={bid.amount}
+                            email={userEmail}
+                            jobId={selectedJob.id}
+                            jobTitle={selectedJob.title}
+                            studentId={bid.student_id}
+                            addToast={addToast}
+                            onSuccess={() => {
+                              // Optional additional toast after payment completes
+                              addToast(
+                                "Payment processed! The student can now start working on the job.",
+                                "success",
+                              );
+                              fetchBids(userId);
+                              fetchJobs(userId);
+                              fetchTransactions();
+                              setShowBidsModal(false);
+                            }}
+                            onClose={() => {}}
+                          />
+                        )}
                         {selectedJob.payment_status === "paid" && (
                           <div
                             style={{

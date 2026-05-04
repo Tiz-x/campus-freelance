@@ -75,7 +75,7 @@ const StudentDashboard: React.FC = () => {
   const [completedJobsCount, setCompletedJobsCount] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loadingEarnings, setLoadingEarnings] = useState(false);
-  const [ setUserProfile] = useState<any>(null);
+  const [setUserProfile] = useState<any>(null);
 
   useRoutePersistence();
 
@@ -102,8 +102,10 @@ const StudentDashboard: React.FC = () => {
   const handlePageChange = (page: string) => {
     sessionStorage.setItem("student_activePage", page);
     setActivePage(page);
+    if (page === "messages") {
+      setChatUnreadCount(0);
+    }
   };
-
   const handleFileSelect = () => {
     fileInputRef.current?.click();
   };
@@ -243,7 +245,7 @@ const StudentDashboard: React.FC = () => {
 
   const fetchEarningsData = async () => {
     if (!userId) return;
-    
+
     setLoadingEarnings(true);
     try {
       // Get released payments (total earned)
@@ -253,7 +255,8 @@ const StudentDashboard: React.FC = () => {
         .eq("payee_id", userId)
         .eq("status", "released");
 
-      const total = releasedData?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0;
+      const total =
+        releasedData?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0;
       setTotalEarned(total);
 
       // Get held payments (in escrow)
@@ -263,7 +266,8 @@ const StudentDashboard: React.FC = () => {
         .eq("payee_id", userId)
         .eq("status", "held");
 
-      const escrowTotal = escrowData?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0;
+      const escrowTotal =
+        escrowData?.reduce((sum, tx) => sum + (tx.amount || 0), 0) || 0;
       setEscrowBalance(escrowTotal);
 
       // Get completed jobs count
@@ -1003,8 +1007,8 @@ const StudentDashboard: React.FC = () => {
                   <h4>How payments work</h4>
                   <p>
                     When a client pays for your work, funds are held in escrow.
-                    Once the job is completed and the client confirms, payment is
-                    released to you automatically.
+                    Once the job is completed and the client confirms, payment
+                    is released to you automatically.
                   </p>
                 </div>
               </div>
@@ -1313,17 +1317,25 @@ const StudentDashboard: React.FC = () => {
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
                   <FiBell />
-                  {unreadCount > 0 && (
+                  {unreadCount + chatUnreadCount > 0 && (
                     <span className="notification-count">
-                      {unreadCount > 9 ? "9+" : unreadCount}
+                      {unreadCount + chatUnreadCount > 9
+                        ? "9+"
+                        : unreadCount + chatUnreadCount}
                     </span>
                   )}
                 </button>
                 {showNotifications && (
-                  <NotificationsPopup
-                    userId={userId}
-                    onClose={() => setShowNotifications(false)}
-                  />
+                  <>
+                    <div
+                      className="notifications-backdrop"
+                      onClick={() => setShowNotifications(false)}
+                    />
+                    <NotificationsPopup
+                      userId={userId}
+                      onClose={() => setShowNotifications(false)}
+                    />
+                  </>
                 )}
               </div>
               <div
@@ -1372,160 +1384,179 @@ const StudentDashboard: React.FC = () => {
       )}
 
       {showBidModal && selectedJob && (
-  <div className="modal-overlay" onClick={(e) => {
-    if (e.target === e.currentTarget) setShowBidModal(false);
-  }}>
-    <div className="modal-container">
-      <div className="modal-header">
-        <h2>Place a Bid</h2>
-        <button onClick={() => setShowBidModal(false)} className="modal-close">
-          <FiX size={20} />
-        </button>
-      </div>
-      
-      <div className="modal-body">
-        <div className="job-info">
-          <div className="job-info-title">{selectedJob?.title}</div>
-          <div className="job-info-budget">
-            Budget: {formatBudget(selectedJob?.budget)}
-          </div>
-        </div>
-        
-        {bidError && <div className="error-message">{bidError}</div>}
-        
-        <div className="form-group">
-          <label>
-            <FiDollarSign size={16} /> Your Bid Amount (₦)
-          </label>
-          <input
-            type="number"
-            value={bidAmount}
-            onChange={(e) => setBidAmount(e.target.value)}
-            placeholder="Enter your bid amount"
-          />
-          <small>Maximum: {formatBudget(selectedJob?.budget)}</small>
-        </div>
-        
-        <div className="form-group">
-          <label>
-            <FiUpload size={16} /> Upload Portfolio
-          </label>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".pdf,.jpg,.jpeg,.png,.zip"
-            multiple
-            style={{ display: "none" }}
-          />
-          <div className="portfolio-upload-area">
-            <button type="button" className="upload-btn" onClick={handleFileSelect}>
-              <FiUpload /> Choose Files
-            </button>
-            <span className="upload-hint">
-              PDF, Images, or ZIP (max 5MB each)
-            </span>
-          </div>
-          
-          {portfolioFiles.length > 0 && (
-            <div className="uploaded-files">
-              {portfolioFiles.map((file, index) => (
-                <div key={index} className="uploaded-file">
-                  <FiFile size={14} />
-                  <span>{file.name}</span>
-                  <button onClick={() => removePortfolioFile(index)}>
-                    <FiTrash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        <div className="form-group">
-          <label>
-            <FiMessageSquare size={16} /> Message to Client (Optional)
-          </label>
-          <textarea
-            value={bidMessage}
-            onChange={(e) => setBidMessage(e.target.value)}
-            placeholder="Introduce yourself and explain why you're the best fit for this job..."
-            rows={4}
-          />
-        </div>
-      </div>
-      
-      <div className="modal-footer">
-        <button
-          onClick={handleBid}
-          disabled={submitting || uploadingFiles}
-          className="btn-submit"
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowBidModal(false);
+          }}
         >
-          {submitting || uploadingFiles ? (
-            <>Processing... <FiLock /></>
-          ) : (
-            <>Submit Bid <FiSend /></>
-          )}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          <div className="modal-container">
+            <div className="modal-header">
+              <h2>Place a Bid</h2>
+              <button
+                onClick={() => setShowBidModal(false)}
+                className="modal-close"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="job-info">
+                <div className="job-info-title">{selectedJob?.title}</div>
+                <div className="job-info-budget">
+                  Budget: {formatBudget(selectedJob?.budget)}
+                </div>
+              </div>
+
+              {bidError && <div className="error-message">{bidError}</div>}
+
+              <div className="form-group">
+                <label>
+                  <FiDollarSign size={16} /> Your Bid Amount (₦)
+                </label>
+                <input
+                  type="number"
+                  value={bidAmount}
+                  onChange={(e) => setBidAmount(e.target.value)}
+                  placeholder="Enter your bid amount"
+                />
+                <small>Maximum: {formatBudget(selectedJob?.budget)}</small>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <FiUpload size={16} /> Upload Portfolio
+                </label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png,.zip"
+                  multiple
+                  style={{ display: "none" }}
+                />
+                <div className="portfolio-upload-area">
+                  <button
+                    type="button"
+                    className="upload-btn"
+                    onClick={handleFileSelect}
+                  >
+                    <FiUpload /> Choose Files
+                  </button>
+                  <span className="upload-hint">
+                    PDF, Images, or ZIP (max 5MB each)
+                  </span>
+                </div>
+
+                {portfolioFiles.length > 0 && (
+                  <div className="uploaded-files">
+                    {portfolioFiles.map((file, index) => (
+                      <div key={index} className="uploaded-file">
+                        <FiFile size={14} />
+                        <span>{file.name}</span>
+                        <button onClick={() => removePortfolioFile(index)}>
+                          <FiTrash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <FiMessageSquare size={16} /> Message to Client (Optional)
+                </label>
+                <textarea
+                  value={bidMessage}
+                  onChange={(e) => setBidMessage(e.target.value)}
+                  placeholder="Introduce yourself and explain why you're the best fit for this job..."
+                  rows={4}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                onClick={handleBid}
+                disabled={submitting || uploadingFiles}
+                className="btn-submit"
+              >
+                {submitting || uploadingFiles ? (
+                  <>
+                    Processing... <FiLock />
+                  </>
+                ) : (
+                  <>
+                    Submit Bid <FiSend />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showSuccessModal && successBidData && (
-  <div className="modal-overlay" onClick={(e) => {
-    if (e.target === e.currentTarget) setShowSuccessModal(false);
-  }}>
-    <div className="success-modal-container">
-      <div className="success-animation">
-        <div className="success-checkmark">
-          <div className="check-icon">
-            <span className="check-line tip"></span>
-            <span className="check-line long"></span>
-            <div className="check-circle"></div>
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowSuccessModal(false);
+          }}
+        >
+          <div className="success-modal-container">
+            <div className="success-animation">
+              <div className="success-checkmark">
+                <div className="check-icon">
+                  <span className="check-line tip"></span>
+                  <span className="check-line long"></span>
+                  <div className="check-circle"></div>
+                </div>
+              </div>
+            </div>
+
+            <h2 className="success-title">Bid Placed Successfully!</h2>
+            <p className="success-message">
+              Your bid has been submitted to{" "}
+              <strong>{successBidData.clientName}</strong>
+            </p>
+
+            <div className="bid-details-card">
+              <div className="bid-detail-item">
+                <span className="bid-detail-label">Job Title</span>
+                <span className="bid-detail-value">
+                  {successBidData.jobTitle}
+                </span>
+              </div>
+              <div className="bid-detail-item">
+                <span className="bid-detail-label">Your Bid Amount</span>
+                <span className="bid-detail-value highlight">
+                  {formatBudget(successBidData.amount)}
+                </span>
+              </div>
+            </div>
+
+            <div className="success-actions">
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  handlePageChange("bids");
+                }}
+                className="success-btn-primary"
+              >
+                <FiEye size={16} /> View My Bids
+              </button>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="success-btn-secondary"
+              >
+                <FiArrowRight size={16} /> Continue Browsing
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <h2 className="success-title">Bid Placed Successfully!</h2>
-      <p className="success-message">
-        Your bid has been submitted to{" "}
-        <strong>{successBidData.clientName}</strong>
-      </p>
-      
-      <div className="bid-details-card">
-        <div className="bid-detail-item">
-          <span className="bid-detail-label">Job Title</span>
-          <span className="bid-detail-value">{successBidData.jobTitle}</span>
-        </div>
-        <div className="bid-detail-item">
-          <span className="bid-detail-label">Your Bid Amount</span>
-          <span className="bid-detail-value highlight">
-            {formatBudget(successBidData.amount)}
-          </span>
-        </div>
-      </div>
-      
-      <div className="success-actions">
-        <button
-          onClick={() => {
-            setShowSuccessModal(false);
-            handlePageChange("bids");
-          }}
-          className="success-btn-primary"
-        >
-          <FiEye size={16} /> View My Bids
-        </button>
-        <button
-          onClick={() => setShowSuccessModal(false)}
-          className="success-btn-secondary"
-        >
-          <FiArrowRight size={16} /> Continue Browsing
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       <ConfirmationModal
         isOpen={showConfirmModal}

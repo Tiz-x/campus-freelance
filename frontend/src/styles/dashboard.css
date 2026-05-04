@@ -3308,3 +3308,23 @@ body.modal-open .sidebar {
   margin-bottom: 1rem;
   font-size: 0.875rem;
 }
+
+
+
+
+/* Notification overlay backdrop */
+.notification-wrapper {
+  position: relative;
+}
+
+.notifications-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+}
+
+/* Bell badge for unread messages */
+.topbar-notif.has-unread {
+  border-color: #ef4444;
+  color: #ef4444;
+}
