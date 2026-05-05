@@ -1137,28 +1137,47 @@ a {
 }
 
 @media (max-width: 480px) {
-  /* NAVBAR */
   .navbar {
     padding: 0 4%;
     height: 60px;
+    justify-content: space-between;
   }
 
   .nav-logo {
-    font-size: 1rem;
+    font-size: 0.85rem;
+    gap: 0.35rem;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
+
   .logo-icon {
-    font-size: 1.15rem;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .nav-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-shrink: 0;
   }
 
   .btn-outline {
-    display: none;
+    display: flex;
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap;
   }
 
   .navbar .btn-primary {
-    padding: 0.48rem 0.9rem;
-    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 8px;
+    white-space: nowrap;
   }
+
 
   /* HERO */
   .hero-content h1 {
