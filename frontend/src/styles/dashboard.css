@@ -3328,3 +3328,69 @@ body.modal-open .sidebar {
   border-color: #ef4444;
   color: #ef4444;
 }
+
+
+
+
+
+
+.job-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.job-actions .apply-btn,
+.job-actions .btn-outline-small,
+.job-actions .btn-complete {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.btn-complete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #1a9c6e 0%, #158f5e 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(26, 156, 110, 0.25);
+}
+
+.btn-complete:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26, 156, 110, 0.35);
+}
+
+.btn-outline-small {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn-outline-small:hover {
+  background: var(--primary-light);
+}

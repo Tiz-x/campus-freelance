@@ -536,7 +536,7 @@
 
 .success-icon {
   font-size: 4rem;
-  color: #1a9c6e;
+  color: white !important;
   margin-bottom: 1rem;
 }
 

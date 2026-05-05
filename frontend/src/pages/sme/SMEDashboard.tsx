@@ -215,12 +215,11 @@ const SMEDashboard = () => {
   const fetchTransactions = async () => {
     if (!userId) return;
     setTransactionsLoading(true);
+
     const { data, error } = await supabase
       .from("transactions")
       .select("*, jobs(title)")
-      .or(
-        `payer_id.eq.${userId},job_id.in.(${jobs.map((j) => j.id).join(",")})`,
-      )
+      .eq("payer_id", userId)
       .order("created_at", { ascending: false });
 
     if (!error && data) {
@@ -420,102 +419,107 @@ const SMEDashboard = () => {
     amount: number,
     jobTitle: string,
   ) => {
-    console.log("Complete job called:", { jobId, studentId, amount, jobTitle });
     setPendingAction({
       type: "complete_job",
       data: { jobId, studentId, amount, jobTitle },
     });
     setShowConfirmModal(true);
   };
+
   const confirmCompleteJob = async () => {
-    if (!pendingAction?.data) return;
-    const { jobId, studentId, amount, jobTitle } = pendingAction.data;
+  if (!pendingAction?.data) return;
+  const { jobId, studentId, jobTitle } = pendingAction.data;
 
-    try {
-      // STEP 1: Find the held transaction for this job
-      const { data: txData, error: findError } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("job_id", jobId)
-        .eq("status", "held")
-        .maybeSingle();
+  try {
+    // Step 1: Get ALL held transactions for this job
+    const { data: txRows, error: findError } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("job_id", jobId)
+      .eq("status", "held");
 
-      if (findError || !txData) {
-        addToast("No escrow transaction found for this job.", "error");
-        setShowConfirmModal(false);
-        setPendingAction(null);
-        return;
-      }
-
-      // STEP 2: Release transaction
-      const { error: txError } = await supabase
-        .from("transactions")
-        .update({ status: "released" })
-        .eq("id", txData.id);
-
-      if (txError) {
-        addToast("Failed to release payment: " + txError.message, "error");
-        setShowConfirmModal(false);
-        setPendingAction(null);
-        return;
-      }
-
-      // STEP 3: Update job to completed
-      await supabase
-        .from("jobs")
-        .update({ status: "completed", payment_status: "released" })
-        .eq("id", jobId);
-
-      // STEP 4: Update escrow_transactions
-      await supabase
-        .from("escrow_transactions")
-        .update({ status: "released", released_at: new Date().toISOString() })
-        .eq("job_id", jobId);
-
-      // STEP 5: Update student profile — add to total earned
-      const { data: studentProfile } = await supabase
-        .from("profiles")
-        .select("total_earned, total_jobs")
-        .eq("id", studentId)
-        .maybeSingle();
-
-      if (studentProfile) {
-        await supabase
-          .from("profiles")
-          .update({
-            total_earned: (studentProfile.total_earned || 0) + amount,
-            total_jobs: (studentProfile.total_jobs || 0) + 1,
-          })
-          .eq("id", studentId);
-      }
-
-      // STEP 6: Notify student
-      await supabase.from("notifications").insert({
-        user_id: studentId,
-        type: "payment_released",
-        title: "Payment Released! 💰",
-        message: `Payment of ₦${amount.toLocaleString()} for "${jobTitle}" has been released to your account!`,
-        related_id: jobId,
-        is_read: false,
-      });
-
-      addToast(
-        `✓ Job completed! ₦${amount.toLocaleString()} released to student.`,
-        "success",
-      );
-
-      // STEP 7: Refresh data
-      await fetchJobs(userId);
-      await fetchTransactions();
-      await fetchBids(userId);
-    } catch (error) {
-      console.error("Error completing job:", error);
-      addToast("Failed to complete job. Please try again.", "error");
-    } finally {
+    if (findError || !txRows || txRows.length === 0) {
+      addToast("No escrow transaction found for this job.", "error");
       setShowConfirmModal(false);
       setPendingAction(null);
+      return;
     }
-  };
+
+    const releaseAmount = txRows.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+    // Step 2: Release ALL held transactions
+    const { error: txError } = await supabase
+      .from("transactions")
+      .update({ status: "released" })
+      .eq("job_id", jobId)
+      .eq("status", "held");
+
+    if (txError) {
+      addToast("Failed to release payment: " + txError.message, "error");
+      setShowConfirmModal(false);
+      setPendingAction(null);
+      return;
+    }
+
+    // Step 3: Update job status
+    const { error: jobError } = await supabase
+      .from("jobs")
+      .update({ status: "completed", payment_status: "released" })
+      .eq("id", jobId);
+
+    if (jobError) {
+      addToast("Failed to update job status: " + jobError.message, "error");
+      return;
+    }
+
+    // Step 4: Update escrow_transactions
+    await supabase
+      .from("escrow_transactions")
+      .update({ status: "released", released_at: new Date().toISOString() })
+      .eq("job_id", jobId);
+
+    // Step 5: Update student profile
+    const { data: studentProfile } = await supabase
+      .from("profiles")
+      .select("total_earned, total_jobs")
+      .eq("id", studentId)
+      .maybeSingle();
+
+    if (studentProfile) {
+      await supabase
+        .from("profiles")
+        .update({
+          total_earned: (studentProfile.total_earned || 0) + releaseAmount,
+          total_jobs: (studentProfile.total_jobs || 0) + 1,
+        })
+        .eq("id", studentId);
+    }
+
+    // Step 6: Notify student
+    await supabase.from("notifications").insert({
+      user_id: studentId,
+      type: "payment_released",
+      title: "Payment Released! 💰",
+      message: `Payment of ₦${releaseAmount.toLocaleString()} for "${jobTitle}" has been released to your account!`,
+      related_id: jobId,
+      is_read: false,
+    });
+
+    addToast(
+      `✓ Job completed! ₦${releaseAmount.toLocaleString()} released to student.`,
+      "success"
+    );
+
+    await Promise.all([fetchJobs(userId), fetchTransactions(), fetchBids(userId)]);
+
+  } catch (error) {
+    console.error("Error completing job:", error);
+    addToast("Failed to complete job. Please try again.", "error");
+  } finally {
+    setShowConfirmModal(false);
+    setPendingAction(null);
+  }
+};
 
   const viewJobBids = (job: any) => {
     setSelectedJob(job);
@@ -1314,11 +1318,9 @@ const SMEDashboard = () => {
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
                   <FiBell />
-                  {unreadCount + chatUnreadCount > 0 && (
+                  {unreadCount > 0 && (
                     <span className="notification-count">
-                      {unreadCount + chatUnreadCount > 9
-                        ? "9+"
-                        : unreadCount + chatUnreadCount}
+                      {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
                 </button>

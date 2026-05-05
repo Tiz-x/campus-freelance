@@ -1313,18 +1313,16 @@ const StudentDashboard: React.FC = () => {
             <div className="topbar-actions">
               <div className="notification-wrapper">
                 <button
-                  className="topbar-notif"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                >
-                  <FiBell />
-                  {unreadCount + chatUnreadCount > 0 && (
-                    <span className="notification-count">
-                      {unreadCount + chatUnreadCount > 9
-                        ? "9+"
-                        : unreadCount + chatUnreadCount}
-                    </span>
-                  )}
-                </button>
+  className="topbar-notif"
+  onClick={() => setShowNotifications(!showNotifications)}
+>
+  <FiBell />
+  {unreadCount > 0 && (
+    <span className="notification-count">
+      {unreadCount > 9 ? "9+" : unreadCount}
+    </span>
+  )}
+</button>
                 {showNotifications && (
                   <>
                     <div
